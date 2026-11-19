@@ -143,7 +143,6 @@ async function route(){
   const{data:f}=await sb.auth.mfa.listFactors();
   const ver=f.totp||[];
   if(aal.currentLevel==='aal2'){
-    if(ver.length<2)return showSetup(ver.length+1);
     return showHome();
   }
   if(ver.length===0)return showSetup(1);
@@ -224,7 +223,7 @@ async function enrollFactor(name){
 }
 async function showSetup(n){
   V().innerHTML=`<div class="auth"><div class="card"><div class="steps"><i class="on"></i><i class="${n>1?'on':''}"></i></div>
-  <h2>Verifica in due passaggi · Dispositivo ${n} di 2</h2><p class="small" id="lead">Preparazione…</p></div></div>`;
+  <h2>${n===1?'Verifica in due passaggi · Dispositivo principale':'Dispositivo di riserva (facoltativo)'}</h2><p class="small" id="lead">Preparazione…</p></div></div>`;
   const{data,error}=await enrollFactor(n===1?'Principale':'Riserva');
   if(error){$('#lead').textContent=msgErr(error);return}
   $('#lead').outerHTML=`<p class="small">${n===1?'Dispositivo principale. Apri Google Authenticator, Microsoft Authenticator o simili e inquadra il codice.':'Dispositivo di riserva (un altro telefono). Ti serve se perdi il principale.'}</p>
@@ -232,14 +231,19 @@ async function showSetup(n){
    <p class="small">Non riesci a inquadrarlo? Inserisci questa chiave:</p><div class="secret">${esc(data.totp.secret)}</div>
    <label>Codice a 6 cifre per confermare</label><div class="code" id="cb"></div><div class="err" id="err"></div>
    <button class="btn pri" id="go">${n===1?'Conferma e continua':'Conferma e termina'}</button>
+   ${n===2?'<button class="btn" id="skip">Salta, lo faccio dopo</button><div class="note">Con un solo dispositivo, se perdi il telefono non potrai entrare. Puoi aggiungere la riserva quando vuoi da Sicurezza account.</div>':''}
    <button class="link" id="out">Esci</button>`;
   const val=codeBox($('#cb'));
   $('#out').onclick=()=>sb.auth.signOut();
+  const sk=$('#skip');if(sk)sk.onclick=async()=>{
+    const{data:f}=await sb.auth.mfa.listFactors();
+    for(const x of (f.all||[]))if(x.factor_type==='totp'&&x.status==='unverified')await sb.auth.mfa.unenroll({factorId:x.id});
+    route()};
   $('#go').onclick=()=>busy($('#go'),async()=>{setErr('');
     const code=val();if(code.length!==6)return setErr('Scrivi le 6 cifre.');
     const{error:e}=await sb.auth.mfa.challengeAndVerify({factorId:data.id,code});
     if(e)return setErr(msgErr(e));
-    toast('Dispositivo registrato');route()});
+    toast('Dispositivo registrato');n===1?showSetup(2):route()});
 }
 function showOtp(factors){
   V().innerHTML=`<div class="auth"><div class="card">${LOGO}<h2>Inserisci il codice</h2>
@@ -289,7 +293,8 @@ async function showHome(){
   const ruoli={};(m.data||[]).forEach(x=>ruoli[x.lavagna_id]=x.ruolo);
   // le lavagne pubbliche di altri sono leggibili ma non vanno mostrate qui
   const lav=(l.data||[]).filter(x=>x.owner_id===user.id||ruoli[x.id]);
-  ST.d={lav,prog:p.data||[],ruoli};
+  const{data:fa}=await sb.auth.mfa.listFactors();
+  ST.d={lav,prog:p.data||[],ruoli,unDisp:((fa&&fa.totp)||[]).length<2};
   renderHome();
 }
 const ago=d=>{const s=(Date.now()-new Date(d))/1000;
@@ -305,7 +310,8 @@ function lavCard(x){
 function renderHome(){
   const d=ST.d;if(!d)return;
   const q=ST.q.trim().toLowerCase(),f=a=>a.filter(x=>!q||(x.titolo||x.nome).toLowerCase().includes(q));
-  let h=`<div class="actions"><button class="btn pri" id="nl">+ Nuova lavagna</button><button class="btn" id="np">+ Nuovo progetto</button></div>`;
+  let h=d.unDisp?`<div class="note" style="margin:0 0 12px">Hai un solo dispositivo di verifica. <a href="#" id="bn" style="color:inherit;font-weight:600">Aggiungi una riserva</a> per non restare fuori se perdi il telefono.</div>`:'';
+  h+=`<div class="actions"><button class="btn pri" id="nl">+ Nuova lavagna</button><button class="btn" id="np">+ Nuovo progetto</button></div>`;
   if(ST.proj){
     const pr=d.prog.find(x=>x.id===ST.proj);
     const ls=f(d.lav.filter(x=>x.progetto_id===ST.proj));
@@ -319,6 +325,7 @@ function renderHome(){
   }
   $('.wrap').innerHTML=h;
   $('#nl').onclick=nuovaLavagna;$('#np').onclick=nuovoProgetto;
+  const bn=$('#bn');if(bn)bn.onclick=e=>{e.preventDefault();showSicurezza()};
   const bk=$('#bk');if(bk)bk.onclick=()=>{ST.proj=null;renderHome()};
   document.querySelectorAll('[data-proj]').forEach(e=>e.onclick=()=>{ST.proj=e.dataset.proj;renderHome()});
   document.querySelectorAll('[data-open]').forEach(e=>e.onclick=()=>toast('L\'editor sarà collegato nel prossimo passo.'));
@@ -385,11 +392,11 @@ async function showSicurezza(){
   shell('<span class="back" id="bk">← Indietro</span><h2 style="text-align:left">Sicurezza account</h2><div id="lst"><p class="empty">Caricamento…</p></div>');
   $('#bk').onclick=showHome;
   const{data}=await sb.auth.mfa.listFactors();const ver=data.totp||[];
-  const last=ver.length<=2;
+  const last=ver.length<=1;
   $('#lst').innerHTML=ver.map(f=>`<div class="dev"><div>📱</div><div style="flex:1"><b>${esc(f.friendly_name||'Dispositivo')}</b><br><small>Aggiunto il ${new Date(f.created_at).toLocaleDateString('it-IT')}</small></div>
-    <button class="mini" data-rm="${f.id}" ${last?'disabled title="Servono almeno 2 dispositivi"':''}>Rimuovi</button></div>`).join('')+
+    <button class="mini" data-rm="${f.id}" ${last?'disabled title="Serve almeno un dispositivo"':''}>Rimuovi</button></div>`).join('')+
    `<button class="btn" id="add">+ Aggiungi dispositivo</button>
-    <div class="note">Non puoi rimuovere un dispositivo se ne resterebbero meno di due: aggiungine prima un altro.</div>`;
+    <div class="note">${ver.length<2?'Hai un solo dispositivo: se perdi il telefono non potrai entrare. Aggiungi un dispositivo di riserva.':'Serve sempre almeno un dispositivo: l\'ultimo non si può rimuovere.'}</div>`;
   document.querySelectorAll('[data-rm]').forEach(b=>b.onclick=async()=>{
     if(!confirm('Rimuovere questo dispositivo?'))return;
     const{error}=await sb.auth.mfa.unenroll({factorId:b.dataset.rm});

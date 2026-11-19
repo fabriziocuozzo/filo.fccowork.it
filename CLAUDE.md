@@ -54,14 +54,14 @@ Istruzioni da applicare a ogni nuova app. Se una regola va cambiata, si modifica
 ### 3.2 Verifica in due passaggi (obbligatoria)
 - Tipo: app di autenticazione (TOTP), con **QR code** da inquadrare con Google Authenticator, Microsoft Authenticator o simili.
 - **Obbligatoria per tutti gli utenti.** Chi ha fatto solo email e password (livello `aal1`) non entra nell'app: viene portato alla configurazione o al codice.
-- **Due dispositivi per utente:** uno principale e uno di riserva. La configurazione guida a registrarli entrambi, ognuno con il suo QR code e un primo codice di conferma.
+- **Almeno un dispositivo per utente, consigliati due:** uno principale (obbligatorio) e uno di riserva (facoltativo, ma raccomandato). La configurazione guida a registrare il principale e propone la riserva, con pulsante "Salta, lo faccio dopo". Ogni dispositivo ha il suo QR code e un primo codice di conferma. Finché c'è un solo dispositivo, la home mostra un promemoria per aggiungere la riserva.
 - Flusso:
   1. Registrazione → conferma email.
-  2. Primo accesso → configurazione dispositivo 1 (QR, codice di conferma) → configurazione dispositivo 2.
+  2. Primo accesso → configurazione dispositivo 1 (QR, codice di conferma) → proposta del dispositivo 2 (si può saltare).
   3. Accessi successivi → email e password → codice a 6 cifre (da uno dei due dispositivi) → home.
-- Scheda "Sicurezza account" nell'app: elenco dei dispositivi registrati, aggiunta e rimozione. Non si può rimuovere l'ultimo dispositivo, e non si scende sotto 2 senza averne aggiunto un altro.
+- Scheda "Sicurezza account" nell'app: elenco dei dispositivi registrati, aggiunta e rimozione. Non si può rimuovere l'ultimo dispositivo.
 - **Obbligo nel database:** ogni regola RLS delle tabelle con dati richiede la sessione di livello `aal2` (controllo `auth.jwt()->>'aal' = 'aal2'`). Così, anche chiamando il database senza passare dall'app, la sola password non basta.
-- Telefono perso o cambiato: si usa il dispositivo di riserva. Se sono persi entrambi, **reset manuale da amministratore** (rimozione dei dispositivi dalla dashboard di Supabase) dopo aver verificato l'identità dell'utente.
+- Telefono perso o cambiato: si usa il dispositivo di riserva, se registrato. Se non c'è una riserva o sono persi tutti i dispositivi, **reset manuale da amministratore** (rimozione dei dispositivi dalla dashboard di Supabase) dopo aver verificato l'identità dell'utente.
 - L'autenticazione a più fattori con app (TOTP) va attivata nelle impostazioni di Authentication di Supabase.
 
 ### 3.3 Regole generali di sicurezza
@@ -130,7 +130,7 @@ Dopo il login si arriva sulla home dell'app, non sull'editor.
 - [ ] Iscrizione all'app alla registrazione
 - [ ] Regole password impostate in Supabase (min. 8, maiuscole, minuscole, cifre, simboli)
 - [ ] Conferma email e "password dimenticata" funzionanti
-- [ ] Verifica in due passaggi obbligatoria, con 2 dispositivi (QR code)
+- [ ] Verifica in due passaggi obbligatoria, con almeno 1 dispositivo (QR code) e riserva consigliata
 - [ ] RLS con controllo `aal2` su tutte le tabelle con dati
 - [ ] Prova: un utente con la sola password non legge né scrive nulla
 - [ ] Home interna con Recenti / Creati da me / Condivisi con me
