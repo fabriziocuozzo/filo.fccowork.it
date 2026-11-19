@@ -1,1 +1,46 @@
-   <h1>Ciao, questa è la mia vetrina</h1>
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Filo — Coming Soon</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Filo — Trova il filo delle tue idee. Coming Soon.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%232b87f0'/%3E%3Cpath d='M5 21c5 0 6-12 11-12s4 10 0 10-4-8 1-8c4 0 6 5 10 5' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+:root{--acc:#2b87f0;--acc2:#1a6fd6;--mut:#64748b}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  font-family:'Segoe UI',system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+  background:#f4f8fd;
+  background-image:radial-gradient(circle,#c7d3e6 1.1px,transparent 1.3px);
+  background-size:24px 24px;
+  color:#0f172a;
+  display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;
+  animation:wfade .35s ease;
+}
+@keyframes wfade{from{opacity:0}to{opacity:1}}
+main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center}
+.wthread{stroke:#2b87f0;stroke-width:5;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;animation:wdraw 1.4s .15s ease forwards}
+@keyframes wdraw{to{stroke-dashoffset:0}}
+.wdot{fill:#2b87f0;opacity:0;animation:wpop .4s 1.45s ease forwards;transform-origin:114px 28px}
+@keyframes wpop{from{opacity:0;transform:scale(.2)}to{opacity:1;transform:scale(1)}}
+.wtitle{font-size:56px;font-weight:800;color:var(--acc2);letter-spacing:-.03em;margin-top:4px}
+.soon{margin-top:14px;font-size:15px;font-weight:600;letter-spacing:.32em;text-transform:uppercase;color:var(--mut);opacity:0;animation:wfade .6s 1.9s ease forwards}
+footer{padding:18px;text-align:center;color:#94a3b8;font-size:12px}
+@media (prefers-reduced-motion:reduce){
+  .wthread{animation:none;stroke-dashoffset:0}
+  .wdot{animation:none;opacity:1}
+  .soon{animation:none;opacity:1}
+}
+</style>
+</head>
+<body>
+<main>
+  <svg viewBox="0 0 120 56" width="240" height="112" fill="none" aria-hidden="true"><path class="wthread" pathLength="1" d="M6 40c18 0 22-30 40-30s14 26 0 26-14-22 4-22c14 0 22 14 64 14"/><circle class="wdot" cx="114" cy="28" r="5"/></svg>
+  <h1 class="wtitle">Filo</h1>
+  <div class="soon">Coming Soon</div>
+</main>
+<footer>&copy; 2026 Fabrizio Cuozzo</footer>
+</body>
+</html>
