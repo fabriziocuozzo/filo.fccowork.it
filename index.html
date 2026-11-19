@@ -328,7 +328,7 @@ function renderHome(){
   const bn=$('#bn');if(bn)bn.onclick=e=>{e.preventDefault();showSicurezza()};
   const bk=$('#bk');if(bk)bk.onclick=()=>{ST.proj=null;renderHome()};
   document.querySelectorAll('[data-proj]').forEach(e=>e.onclick=()=>{ST.proj=e.dataset.proj;renderHome()});
-  document.querySelectorAll('[data-open]').forEach(e=>e.onclick=()=>toast('L\'editor sarà collegato nel prossimo passo.'));
+  document.querySelectorAll('[data-open]').forEach(e=>e.onclick=()=>{location.href='editor.html?l='+encodeURIComponent(e.dataset.open)});
   document.querySelectorAll('[data-share]').forEach(e=>e.onclick=ev=>{ev.stopPropagation();condividi(e.dataset.share)});
 }
 function nuovoProgetto(){
