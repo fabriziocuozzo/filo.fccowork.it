@@ -57,7 +57,8 @@ h3{margin:22px 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:.05
 .badge{display:inline-block;margin-top:6px;padding:2px 8px;border-radius:99px;font-size:11.5px;background:var(--accento-chiaro);color:var(--accento)}
 .badge.r{background:#f1f5f9;color:var(--testo-secondario)}
 .folder .thumb{background:#fff7e6;font-size:34px}
-.share{position:absolute;top:8px;right:8px;background:#fff;border:1px solid var(--bordo);border-radius:8px;padding:3px 8px;font-size:12px;cursor:pointer}
+.acts{position:absolute;top:8px;right:8px;display:flex;flex-direction:column;gap:4px;align-items:flex-end}
+.share{background:#fff;border:1px solid var(--bordo);border-radius:8px;padding:2px 8px;font-size:12px;cursor:pointer;font-family:inherit;color:var(--testo)}
 .empty{color:var(--testo-secondario);font-size:14px;padding:6px 2px}
 .dev{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--bordo);border-radius:var(--r);margin-bottom:8px;background:#fff}
 .dev small{color:var(--testo-secondario)}
@@ -303,7 +304,7 @@ const ago=d=>{const s=(Date.now()-new Date(d))/1000;
 function lavCard(x){
   const mine=x.owner_id===user.id,r=ST.d.ruoli[x.id];
   return `<div class="item" data-open="${x.id}"><div class="thumb">${THUMB}</div>
-   ${mine?`<button class="share" data-share="${x.id}">Condividi</button>`:''}
+   ${mine?`<div class="acts"><button class="share" data-share="${x.id}">Condividi</button><button class="share" data-lren="${x.id}">Rinomina</button><button class="share" data-ldel="${x.id}" style="color:var(--err)">Elimina</button></div>`:''}
    <div class="meta"><b>${esc(x.titolo)}</b><small>Modificata ${ago(x.modificata_il)}</small>
    ${!mine&&r?`<br><span class="badge ${r==='editor'?'':'r'}">${r==='editor'?'può modificare':'può leggere'}</span>`:''}${mine&&x.link_pubblico?`<br><span class="badge r">link pubblico</span>`:''}</div></div>`;
 }
@@ -320,7 +321,7 @@ function renderHome(){
   }else{
     const rec=f(d.lav).slice(0,6),pr=f(d.prog),cond=f(d.lav.filter(x=>x.owner_id!==user.id));
     h+=`<h3>Recenti</h3>${rec.length?`<div class="grid">${rec.map(lavCard).join('')}</div>`:'<p class="empty">Nessuna lavagna. Crea la prima con «Nuova lavagna».</p>'}
-     <h3>Progetti</h3>${pr.length?`<div class="grid">${pr.map(x=>`<div class="item folder" data-proj="${x.id}"><div class="thumb">📁</div><div class="meta"><b>${esc(x.nome)}</b><small>${d.lav.filter(l=>l.progetto_id===x.id).length} lavagne</small></div></div>`).join('')}</div>`:'<p class="empty">Nessun progetto.</p>'}
+     <h3>Progetti</h3>${pr.length?`<div class="grid">${pr.map(x=>`<div class="item folder" data-proj="${x.id}"><div class="acts"><button class="share" data-pren="${x.id}">Rinomina</button><button class="share" data-pdel="${x.id}" style="color:var(--err)">Elimina</button></div><div class="thumb">📁</div><div class="meta"><b>${esc(x.nome)}</b><small>${d.lav.filter(l=>l.progetto_id===x.id).length} lavagne</small></div></div>`).join('')}</div>`:'<p class="empty">Nessun progetto.</p>'}
      <h3>Condivise con me</h3>${cond.length?`<div class="grid">${cond.map(lavCard).join('')}</div>`:'<p class="empty">Nessuna lavagna condivisa con te.</p>'}`;
   }
   $('.wrap').innerHTML=h;
@@ -330,6 +331,36 @@ function renderHome(){
   document.querySelectorAll('[data-proj]').forEach(e=>e.onclick=()=>{ST.proj=e.dataset.proj;renderHome()});
   document.querySelectorAll('[data-open]').forEach(e=>e.onclick=()=>{location.href='editor.html?l='+encodeURIComponent(e.dataset.open)});
   document.querySelectorAll('[data-share]').forEach(e=>e.onclick=ev=>{ev.stopPropagation();condividi(e.dataset.share)});
+  const on=(sel,key,fn)=>document.querySelectorAll(sel).forEach(e=>e.onclick=ev=>{ev.stopPropagation();fn(e.dataset[key])});
+  on('[data-lren]','lren',renLav);on('[data-ldel]','ldel',delLav);on('[data-pren]','pren',renProg);on('[data-pdel]','pdel',delProg);
+}
+async function renLav(id){
+  const x=ST.d.lav.find(l=>l.id===id),t=prompt('Nuovo titolo della lavagna:',x.titolo);
+  if(t===null||!t.trim())return;
+  const{data,error}=await sb.from('lavagne').update({titolo:t.trim()}).eq('id',id).select('id');
+  if(error||!data.length)return toast(error?msgErr(error):'Non hai il permesso di modificarla.',1);
+  toast('Lavagna rinominata');showHome();
+}
+async function delLav(id){
+  const x=ST.d.lav.find(l=>l.id===id);
+  if(!confirm('Eliminare la lavagna «'+x.titolo+'»?\nVerranno cancellati anche tutti i suoi elementi e le condivisioni. L\'operazione non si può annullare.'))return;
+  const{data,error}=await sb.from('lavagne').delete().eq('id',id).select('id');
+  if(error||!data.length)return toast(error?msgErr(error):'Non hai il permesso di eliminarla.',1);
+  toast('Lavagna eliminata');showHome();
+}
+async function renProg(id){
+  const x=ST.d.prog.find(p=>p.id===id),t=prompt('Nuovo nome del progetto:',x.nome);
+  if(t===null||!t.trim())return;
+  const{data,error}=await sb.from('progetti').update({nome:t.trim()}).eq('id',id).select('id');
+  if(error||!data.length)return toast(error?msgErr(error):'Non hai il permesso di modificarlo.',1);
+  toast('Progetto rinominato');showHome();
+}
+async function delProg(id){
+  const x=ST.d.prog.find(p=>p.id===id),n=ST.d.lav.filter(l=>l.progetto_id===id).length;
+  if(!confirm('Eliminare il progetto «'+x.nome+'»?\n'+(n?'Le '+n+' lavagne al suo interno NON vengono eliminate: restano senza progetto.':'Il progetto è vuoto.')))return;
+  const{data,error}=await sb.from('progetti').delete().eq('id',id).select('id');
+  if(error||!data.length)return toast(error?msgErr(error):'Non hai il permesso di eliminarlo.',1);
+  ST.proj=null;toast('Progetto eliminato');showHome();
 }
 function nuovoProgetto(){
   const m=modal(`<h2 style="text-align:left;margin-top:0">Nuovo progetto</h2><label>Nome</label><input id="n" maxlength="80"><div class="err" id="err"></div>
