@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Filo</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%232563eb'/%3E%3Cpath d='M5 21c5 0 6-12 11-12s4 10 0 10-4-8 1-8c4 0 6 5 10 5' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+:root{--accento:#2563eb;--accento-chiaro:#dbeafe;--sfondo:#f8fafc;--superficie:#ffffff;--testo:#0f172a;--testo-secondario:#64748b;--bordo:#e2e8f0;--ok:#16a34a;--err:#dc2626;--r:12px;--ombra:0 1px 3px rgba(15,23,42,.08),0 4px 14px rgba(15,23,42,.06)}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;background:var(--sfondo);color:var(--testo);font-size:15px}
+.auth{display:flex;align-items:center;justify-content:center;padding:24px 16px;min-height:100vh}
+.card{background:var(--superficie);border:1px solid var(--bordo);border-radius:var(--r);box-shadow:var(--ombra);padding:24px;width:100%;max-width:400px}
+.logo{display:flex;flex-direction:column;align-items:center;margin-bottom:14px}
+.logo svg{width:96px;height:46px}
+.logo b{font-size:26px;color:var(--accento);letter-spacing:-.02em;font-weight:800}
+.logo span{color:var(--testo-secondario);font-size:13px}
+h2{margin:6px 0 14px;font-size:18px;text-align:center}
+label{display:block;font-size:12.5px;font-weight:600;color:var(--testo-secondario);margin:12px 0 4px}
+input,select{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--bordo);border-radius:9px;background:#fff;color:var(--testo)}
+input:focus,select:focus{outline:2px solid var(--accento-chiaro);border-color:var(--accento)}
+.btn{width:100%;margin-top:16px;padding:11px;border-radius:9px;border:1px solid var(--bordo);background:#fff;font:inherit;font-weight:600;cursor:pointer;color:var(--testo)}
+.btn.pri{background:var(--accento);border-color:var(--accento);color:#fff}
+.btn:disabled{opacity:.55;cursor:wait}
+.link{display:block;text-align:center;margin-top:12px;color:var(--accento);font-size:13.5px;cursor:pointer;background:none;border:0;width:100%;font-family:inherit}
+.rules{list-style:none;margin:8px 0 0;padding:0;font-size:12.5px;color:var(--testo-secondario);display:grid;grid-template-columns:1fr 1fr;gap:3px 8px}
+.rules li:before{content:"○ ";color:#94a3b8}.rules li.ok{color:var(--ok)}.rules li.ok:before{content:"✓ ";color:var(--ok)}
+.steps{display:flex;gap:6px;margin-bottom:14px}.steps i{flex:1;height:5px;border-radius:3px;background:var(--bordo)}.steps i.on{background:var(--accento)}
+.qr{width:176px;height:176px;margin:10px auto;display:block;border:1px solid var(--bordo);border-radius:10px;padding:6px;background:#fff}
+.small{font-size:12.5px;color:var(--testo-secondario);text-align:center;line-height:1.5}
+.code{display:flex;gap:7px;justify-content:center;margin:14px 0 4px}
+.code input{width:42px;text-align:center;font-size:20px;padding:10px 0}
+.note{background:var(--accento-chiaro);color:#1e3a8a;border-radius:9px;padding:10px 12px;font-size:13px;margin-top:12px;line-height:1.45}
+.err{color:var(--err);font-size:13px;margin-top:10px;text-align:center;min-height:1px}
+.secret{font-family:Consolas,monospace;font-size:12px;word-break:break-all;background:var(--sfondo);padding:6px 8px;border-radius:8px;margin-top:6px}
+.top{height:56px;background:var(--superficie);border-bottom:1px solid var(--bordo);display:flex;align-items:center;gap:10px;padding:0 14px;position:sticky;top:0;z-index:5}
+.brand{font-weight:800;color:var(--accento);font-size:19px;display:flex;align-items:center;gap:8px;cursor:pointer}
+.brand i{width:28px;height:28px;border-radius:9px;background:var(--accento);display:grid;place-items:center}
+.brand i svg{width:18px;height:18px}
+.sp{flex:1}
+.search{max-width:320px;flex:1;display:none}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--accento-chiaro);color:var(--accento);display:grid;place-items:center;font-weight:700;font-size:13px;cursor:pointer;flex:none}
+.menu{position:absolute;right:14px;top:52px;background:#fff;border:1px solid var(--bordo);border-radius:var(--r);box-shadow:var(--ombra);padding:6px;width:230px;font-size:14px;z-index:20}
+.menu div{padding:8px 10px;border-radius:8px;cursor:pointer;overflow:hidden;text-overflow:ellipsis}.menu div:hover{background:var(--sfondo)}
+.menu .ver{color:var(--testo-secondario);font-size:12px;border-top:1px solid var(--bordo);margin-top:4px;border-radius:0;cursor:default}
+.wrap{max-width:980px;margin:0 auto;padding:16px}
+.mobsearch{margin-bottom:12px}
+.actions{display:flex;gap:8px;margin-bottom:6px}
+.actions .btn{margin:0;width:auto;padding:9px 14px}
+h3{margin:22px 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--testo-secondario)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.item{background:#fff;border:1px solid var(--bordo);border-radius:var(--r);box-shadow:var(--ombra);overflow:hidden;cursor:pointer;position:relative}
+.item:hover{border-color:var(--accento)}
+.thumb{height:92px;background:var(--sfondo);border-bottom:1px solid var(--bordo);display:grid;place-items:center}
+.thumb svg{width:70%;height:70%}
+.meta{padding:10px 12px}.meta b{display:block;font-size:14.5px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.meta small{color:var(--testo-secondario);font-size:12.5px}
+.badge{display:inline-block;margin-top:6px;padding:2px 8px;border-radius:99px;font-size:11.5px;background:var(--accento-chiaro);color:var(--accento)}
+.badge.r{background:#f1f5f9;color:var(--testo-secondario)}
+.folder .thumb{background:#fff7e6;font-size:34px}
+.share{position:absolute;top:8px;right:8px;background:#fff;border:1px solid var(--bordo);border-radius:8px;padding:3px 8px;font-size:12px;cursor:pointer}
+.empty{color:var(--testo-secondario);font-size:14px;padding:6px 2px}
+.dev{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--bordo);border-radius:var(--r);margin-bottom:8px;background:#fff}
+.dev small{color:var(--testo-secondario)}
+.mini{padding:6px 10px;border:1px solid var(--bordo);border-radius:8px;background:#fff;font:inherit;font-size:13px;cursor:pointer}
+.mini:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.modalbg{position:fixed;inset:0;background:rgba(15,23,42,.4);display:grid;place-items:center;padding:16px;z-index:50;overflow:auto}
+#toasts{position:fixed;top:12px;right:12px;display:flex;flex-direction:column;gap:8px;z-index:100}
+.toast{background:#0f172a;color:#fff;padding:10px 14px;border-radius:10px;font-size:13px;box-shadow:var(--ombra);max-width:300px}
+.toast.e{background:var(--err)}
+.back{color:var(--accento);cursor:pointer;font-size:14px;margin-bottom:8px;display:inline-block}
+@media(min-width:760px){.search{display:block}.mobsearch{display:none}}
+@media(max-width:480px){.code input{width:38px}}
+</style>
+</head>
+<body>
+<div id="view"></div>
+<div id="toasts"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+/* ===== config ===== */
+const CONFIG={
+  url:'https://cgzjdpnhinrmklxlcgza.supabase.co',
+  key:'sb_publishable_0NCeBMapmyrmC26jq1_m3g_L5a3JvEr', // chiave pubblica: l'unica ammessa nel codice
+  app:'filo',            // nome dell'app = schema Postgres
+  versione:'0.1.0'
+};
+/* ================== */
+
+const sb=supabase.createClient(CONFIG.url,CONFIG.key,{db:{schema:CONFIG.app}});
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const V=()=>$('#view');
+let user=null,recovery=false,ST={proj:null,q:'',d:null};
+
+const THREAD='<svg viewBox="0 0 120 56" fill="none"><path d="M6 40c18 0 22-30 40-30s14 26 0 26-14-22 4-22c14 0 22 14 64 14" stroke="#2563eb" stroke-width="5" stroke-linecap="round"/><circle cx="114" cy="28" r="5" fill="#2563eb"/></svg>';
+const MARK='<svg viewBox="0 0 32 32"><path d="M5 21c5 0 6-12 11-12s4 10 0 10-4-8 1-8c4 0 6 5 10 5" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"/></svg>';
+const THUMB='<svg viewBox="0 0 120 70"><rect x="8" y="6" width="34" height="14" rx="5" fill="#2563eb"/><rect x="78" y="6" width="34" height="14" rx="5" fill="#93c5fd"/><rect x="43" y="46" width="34" height="14" rx="5" fill="#2563eb"/><path d="M25 20v14h35v12M95 20v14H60" fill="none" stroke="#94a3b8" stroke-width="2"/></svg>';
+const LOGO=`<div class="logo">${THREAD}<b>Filo</b><span>Trova il filo delle tue idee</span></div>`;
+
+function toast(m,e){const t=document.createElement('div');t.className='toast'+(e?' e':'');t.textContent=m;$('#toasts').appendChild(t);setTimeout(()=>t.remove(),4500)}
+function msgErr(e){const m=(e&&e.message)||String(e);
+  if(/Invalid login/i.test(m))return 'Email o password non corretti.';
+  if(/Email not confirmed/i.test(m))return 'Conferma prima l\'indirizzo email dal messaggio che ti abbiamo inviato.';
+  if(/already registered/i.test(m))return 'Esiste già un account con questa email.';
+  if(/password/i.test(m)&&/weak|least|should contain/i.test(m))return 'Password troppo debole: servono almeno 8 caratteri con maiuscole, minuscole, cifre e simboli.';
+  if(/rate limit|too many/i.test(m))return 'Troppi tentativi. Riprova tra qualche minuto.';
+  if(/Invalid TOTP|invalid.*code/i.test(m))return 'Codice non valido. Controlla l\'app e riprova.';
+  return m}
+async function busy(btn,fn){btn.disabled=true;try{await fn()}finally{btn.disabled=false}}
+function setErr(m){const e=$('#err');if(e)e.textContent=m||''}
+
+function codeBox(el){
+  el.innerHTML='<input maxlength="1" inputmode="numeric" autocomplete="one-time-code" aria-label="Cifra">'.repeat(6);
+  const ins=[...el.children];
+  ins.forEach((i,k)=>{
+    i.oninput=()=>{i.value=i.value.replace(/\D/g,'');if(i.value&&ins[k+1])ins[k+1].focus()};
+    i.onkeydown=e=>{if(e.key==='Backspace'&&!i.value&&ins[k-1])ins[k-1].focus()};
+    i.onpaste=e=>{const t=(e.clipboardData.getData('text')||'').replace(/\D/g,'').slice(0,6);if(t){e.preventDefault();ins.forEach((x,j)=>x.value=t[j]||'');ins[Math.min(t.length,5)].focus()}};
+  });
+  ins[0].focus();
+  return()=>ins.map(i=>i.value).join('');
+}
+function modal(html){
+  const bg=document.createElement('div');bg.className='modalbg';
+  bg.innerHTML=`<div class="card" style="max-width:460px">${html}</div>`;
+  bg.addEventListener('mousedown',e=>{if(e.target===bg)bg.remove()});
+  document.body.appendChild(bg);
+  const close=()=>bg.remove();
+  bg.querySelectorAll('[data-close]').forEach(b=>b.onclick=close);
+  return{el:bg,close};
+}
+const passRules=p=>({len:p.length>=8,up:/[A-Z]/.test(p),lo:/[a-z]/.test(p),dg:/\d/.test(p),sp:/[^A-Za-z0-9]/.test(p)});
+const rulesHtml=r=>`<li class="${r.len?'ok':''}">Almeno 8 caratteri</li><li class="${r.up?'ok':''}">Una maiuscola</li><li class="${r.lo?'ok':''}">Una minuscola</li><li class="${r.dg?'ok':''}">Un numero</li><li class="${r.sp?'ok':''}">Un carattere speciale</li>`;
+const pageUrl=()=>location.origin+location.pathname;
+
+/* ===== routing ===== */
+async function route(){
+  const{data:{session}}=await sb.auth.getSession();
+  if(!session){user=null;return showLogin()}
+  user=session.user;
+  const{data:aal}=await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+  const{data:f}=await sb.auth.mfa.listFactors();
+  const ver=f.totp||[];
+  if(aal.currentLevel==='aal2'){
+    if(ver.length<2)return showSetup(ver.length+1);
+    return showHome();
+  }
+  if(ver.length===0)return showSetup(1);
+  return showOtp(ver);
+}
+
+/* ===== accesso / registrazione ===== */
+function showLogin(){
+  V().innerHTML=`<div class="auth"><div class="card">${LOGO}<h2>Accedi</h2>
+  <label>Email</label><input id="em" type="email" autocomplete="username">
+  <label>Password</label><input id="pw" type="password" autocomplete="current-password">
+  <div class="err" id="err"></div>
+  <button class="btn pri" id="go">Accedi</button>
+  <button class="link" id="fg">Password dimenticata?</button>
+  <button class="link" id="rg" style="color:var(--testo)">Non hai un account? <b style="color:var(--accento)">Registrati</b></button></div></div>`;
+  $('#rg').onclick=showReg;
+  $('#fg').onclick=showForgot;
+  const go=()=>busy($('#go'),async()=>{setErr('');
+    const{error}=await sb.auth.signInWithPassword({email:$('#em').value.trim(),password:$('#pw').value});
+    if(error)return setErr(msgErr(error));
+    route()});
+  $('#go').onclick=go;$('#pw').onkeydown=e=>{if(e.key==='Enter')go()};
+}
+function showReg(){
+  V().innerHTML=`<div class="auth"><div class="card">${LOGO}<h2>Crea il tuo account</h2>
+  <label>Email</label><input id="em" type="email" autocomplete="username">
+  <label>Password</label><input id="pw" type="password" autocomplete="new-password">
+  <ul class="rules" id="ru">${rulesHtml(passRules(''))}</ul>
+  <label>Ripeti la password</label><input id="pw2" type="password" autocomplete="new-password">
+  <label style="display:flex;gap:8px;align-items:flex-start;font-weight:400;color:var(--testo)"><input id="pv" type="checkbox" style="width:auto;margin-top:3px"> Ho letto l'informativa privacy e acconsento al trattamento dei dati.</label>
+  <div class="err" id="err"></div>
+  <button class="btn pri" id="go">Registrati</button>
+  <button class="link" id="bk">Torna all'accesso</button></div></div>`;
+  $('#pw').oninput=()=>$('#ru').innerHTML=rulesHtml(passRules($('#pw').value));
+  $('#bk').onclick=showLogin;
+  $('#go').onclick=()=>busy($('#go'),async()=>{setErr('');
+    const p=$('#pw').value,r=passRules(p);
+    if(!$('#em').value.trim())return setErr('Inserisci l\'email.');
+    if(!Object.values(r).every(Boolean))return setErr('La password non rispetta tutte le regole.');
+    if(p!==$('#pw2').value)return setErr('Le due password non coincidono.');
+    if(!$('#pv').checked)return setErr('Serve il consenso al trattamento dei dati.');
+    const{error}=await sb.auth.signUp({email:$('#em').value.trim(),password:p,options:{emailRedirectTo:pageUrl()}});
+    if(error)return setErr(msgErr(error));
+    V().innerHTML=`<div class="auth"><div class="card">${LOGO}<h2>Controlla la tua email</h2><p class="small">Ti abbiamo inviato un messaggio per confermare l'indirizzo. Dopo la conferma potrai accedere e configurare la verifica in due passaggi.</p><button class="btn" id="bk">Torna all'accesso</button></div></div>`;
+    $('#bk').onclick=showLogin});
+}
+function showForgot(){
+  V().innerHTML=`<div class="auth"><div class="card">${LOGO}<h2>Password dimenticata</h2>
+  <p class="small">Scrivi la tua email: ti inviamo un link per scegliere una nuova password.</p>
+  <label>Email</label><input id="em" type="email"><div class="err" id="err"></div>
+  <button class="btn pri" id="go">Invia il link</button><button class="link" id="bk">Torna all'accesso</button></div></div>`;
+  $('#bk').onclick=showLogin;
+  $('#go').onclick=()=>busy($('#go'),async()=>{setErr('');
+    const{error}=await sb.auth.resetPasswordForEmail($('#em').value.trim(),{redirectTo:pageUrl()});
+    if(error)return setErr(msgErr(error));
+    $('#err').style.color='var(--ok)';setErr('Se l\'indirizzo è registrato, riceverai un\'email a breve.')});
+}
+function showNewPass(){
+  V().innerHTML=`<div class="auth"><div class="card">${LOGO}<h2>Scegli una nuova password</h2>
+  <label>Nuova password</label><input id="pw" type="password" autocomplete="new-password"><ul class="rules" id="ru">${rulesHtml(passRules(''))}</ul>
+  <label>Ripeti la password</label><input id="pw2" type="password" autocomplete="new-password"><div class="err" id="err"></div>
+  <button class="btn pri" id="go">Salva password</button></div></div>`;
+  $('#pw').oninput=()=>$('#ru').innerHTML=rulesHtml(passRules($('#pw').value));
+  $('#go').onclick=()=>busy($('#go'),async()=>{setErr('');
+    const p=$('#pw').value;
+    if(!Object.values(passRules(p)).every(Boolean))return setErr('La password non rispetta tutte le regole.');
+    if(p!==$('#pw2').value)return setErr('Le due password non coincidono.');
+    const{error}=await sb.auth.updateUser({password:p});
+    if(error)return setErr(msgErr(error));
+    recovery=false;toast('Password aggiornata');history.replaceState(null,'',pageUrl());route()});
+}
+
+/* ===== verifica in due passaggi ===== */
+async function enrollFactor(name){
+  const{data:f}=await sb.auth.mfa.listFactors();
+  for(const x of (f.all||[]))if(x.factor_type==='totp'&&x.status==='unverified')await sb.auth.mfa.unenroll({factorId:x.id});
+  return sb.auth.mfa.enroll({factorType:'totp',friendlyName:name});
+}
+async function showSetup(n){
+  V().innerHTML=`<div class="auth"><div class="card"><div class="steps"><i class="on"></i><i class="${n>1?'on':''}"></i></div>
+  <h2>Verifica in due passaggi · Dispositivo ${n} di 2</h2><p class="small" id="lead">Preparazione…</p></div></div>`;
+  const{data,error}=await enrollFactor(n===1?'Principale':'Riserva');
+  if(error){$('#lead').textContent=msgErr(error);return}
+  $('#lead').outerHTML=`<p class="small">${n===1?'Dispositivo principale. Apri Google Authenticator, Microsoft Authenticator o simili e inquadra il codice.':'Dispositivo di riserva (un altro telefono). Ti serve se perdi il principale.'}</p>
+   <img class="qr" alt="QR code" src="${esc(data.totp.qr_code)}">
+   <p class="small">Non riesci a inquadrarlo? Inserisci questa chiave:</p><div class="secret">${esc(data.totp.secret)}</div>
+   <label>Codice a 6 cifre per confermare</label><div class="code" id="cb"></div><div class="err" id="err"></div>
+   <button class="btn pri" id="go">${n===1?'Conferma e continua':'Conferma e termina'}</button>
+   <button class="link" id="out">Esci</button>`;
+  const val=codeBox($('#cb'));
+  $('#out').onclick=()=>sb.auth.signOut();
+  $('#go').onclick=()=>busy($('#go'),async()=>{setErr('');
+    const code=val();if(code.length!==6)return setErr('Scrivi le 6 cifre.');
+    const{error:e}=await sb.auth.mfa.challengeAndVerify({factorId:data.id,code});
+    if(e)return setErr(msgErr(e));
+    toast('Dispositivo registrato');route()});
+}
+function showOtp(factors){
+  V().innerHTML=`<div class="auth"><div class="card">${LOGO}<h2>Inserisci il codice</h2>
+  <p class="small">Apri l'app di autenticazione e scrivi il codice a 6 cifre. Va bene quello di uno qualsiasi dei tuoi dispositivi.</p>
+  <div class="code" id="cb"></div><div class="err" id="err"></div>
+  <button class="btn pri" id="go">Entra</button><button class="link" id="out">Esci</button></div></div>`;
+  const val=codeBox($('#cb'));
+  $('#out').onclick=()=>sb.auth.signOut();
+  const go=()=>busy($('#go'),async()=>{setErr('');
+    const code=val();if(code.length!==6)return setErr('Scrivi le 6 cifre.');
+    let last=null;
+    for(const f of factors){
+      const{error}=await sb.auth.mfa.challengeAndVerify({factorId:f.id,code});
+      if(!error){route();return}
+      last=error;
+    }
+    setErr(msgErr(last))});
+  $('#go').onclick=go;
+}
+
+/* ===== home ===== */
+function shell(inner){
+  const ini=(user.email||'?').slice(0,2).toUpperCase();
+  V().innerHTML=`<div class="top"><div class="brand" id="hm"><i>${MARK}</i>Filo</div>
+  <input class="search" id="q" placeholder="Cerca lavagne e progetti…" value="${esc(ST.q)}"><div class="sp"></div><div class="avatar" id="av">${esc(ini)}</div></div>
+  <div class="menu" id="menu" style="display:none"><div style="color:var(--testo-secondario);cursor:default">${esc(user.email)}</div><div id="m-sic">Sicurezza account</div><div id="m-exp">Esporta dati (JSON)</div><div id="m-imp">Importa dati (JSON)</div><div id="m-out">Esci</div><div class="ver">Filo v${CONFIG.versione}</div></div>
+  <div class="wrap">${inner}</div><input type="file" id="file" accept="application/json,.json" style="display:none">`;
+  $('#hm').onclick=()=>{ST.proj=null;showHome()};
+  $('#av').onclick=()=>{const m=$('#menu');m.style.display=m.style.display==='none'?'block':'none'};
+  $('#m-out').onclick=()=>sb.auth.signOut();
+  $('#m-sic').onclick=showSicurezza;
+  $('#m-exp').onclick=exportJson;
+  $('#m-imp').onclick=()=>$('#file').click();
+  $('#file').onchange=importJson;
+  const q=$('#q');if(q)q.oninput=()=>{ST.q=q.value;renderHome()};
+}
+async function showHome(){
+  shell('<p class="empty">Caricamento…</p>');
+  const{error:ei}=await sb.schema('public').from('iscrizioni').upsert({app:CONFIG.app},{onConflict:'user_id,app',ignoreDuplicates:true});
+  if(ei){$('.wrap').innerHTML=`<p class="empty">Impossibile attivare l'accesso a Filo: ${esc(msgErr(ei))}</p>`;return}
+  const[m,l,p]=await Promise.all([
+    sb.from('membri').select('lavagna_id,ruolo').eq('user_id',user.id),
+    sb.from('lavagne').select('*').order('modificata_il',{ascending:false}),
+    sb.from('progetti').select('*').order('creata_il')]);
+  const er=m.error||l.error||p.error;
+  if(er){$('.wrap').innerHTML=`<p class="empty">Errore nel caricamento: ${esc(msgErr(er))}<br>Controlla che lo schema «filo» sia tra gli Exposed schemas di Supabase.</p>`;return}
+  const ruoli={};(m.data||[]).forEach(x=>ruoli[x.lavagna_id]=x.ruolo);
+  // le lavagne pubbliche di altri sono leggibili ma non vanno mostrate qui
+  const lav=(l.data||[]).filter(x=>x.owner_id===user.id||ruoli[x.id]);
+  ST.d={lav,prog:p.data||[],ruoli};
+  renderHome();
+}
+const ago=d=>{const s=(Date.now()-new Date(d))/1000;
+  if(s<90)return 'ora';if(s<3600)return Math.round(s/60)+' min fa';if(s<86400)return Math.round(s/3600)+' ore fa';
+  if(s<172800)return 'ieri';return Math.round(s/86400)+' giorni fa'};
+function lavCard(x){
+  const mine=x.owner_id===user.id,r=ST.d.ruoli[x.id];
+  return `<div class="item" data-open="${x.id}"><div class="thumb">${THUMB}</div>
+   ${mine?`<button class="share" data-share="${x.id}">Condividi</button>`:''}
+   <div class="meta"><b>${esc(x.titolo)}</b><small>Modificata ${ago(x.modificata_il)}</small>
+   ${!mine&&r?`<br><span class="badge ${r==='editor'?'':'r'}">${r==='editor'?'può modificare':'può leggere'}</span>`:''}${mine&&x.link_pubblico?`<br><span class="badge r">link pubblico</span>`:''}</div></div>`;
+}
+function renderHome(){
+  const d=ST.d;if(!d)return;
+  const q=ST.q.trim().toLowerCase(),f=a=>a.filter(x=>!q||(x.titolo||x.nome).toLowerCase().includes(q));
+  let h=`<div class="actions"><button class="btn pri" id="nl">+ Nuova lavagna</button><button class="btn" id="np">+ Nuovo progetto</button></div>`;
+  if(ST.proj){
+    const pr=d.prog.find(x=>x.id===ST.proj);
+    const ls=f(d.lav.filter(x=>x.progetto_id===ST.proj));
+    h+=`<span class="back" id="bk">← Tutti i progetti</span><h3 style="margin-top:6px">📁 ${esc(pr?pr.nome:'Progetto')}</h3>
+     <div class="grid">${ls.map(lavCard).join('')}</div>${ls.length?'':'<p class="empty">Nessuna lavagna in questo progetto.</p>'}`;
+  }else{
+    const rec=f(d.lav).slice(0,6),pr=f(d.prog),cond=f(d.lav.filter(x=>x.owner_id!==user.id));
+    h+=`<h3>Recenti</h3>${rec.length?`<div class="grid">${rec.map(lavCard).join('')}</div>`:'<p class="empty">Nessuna lavagna. Crea la prima con «Nuova lavagna».</p>'}
+     <h3>Progetti</h3>${pr.length?`<div class="grid">${pr.map(x=>`<div class="item folder" data-proj="${x.id}"><div class="thumb">📁</div><div class="meta"><b>${esc(x.nome)}</b><small>${d.lav.filter(l=>l.progetto_id===x.id).length} lavagne</small></div></div>`).join('')}</div>`:'<p class="empty">Nessun progetto.</p>'}
+     <h3>Condivise con me</h3>${cond.length?`<div class="grid">${cond.map(lavCard).join('')}</div>`:'<p class="empty">Nessuna lavagna condivisa con te.</p>'}`;
+  }
+  $('.wrap').innerHTML=h;
+  $('#nl').onclick=nuovaLavagna;$('#np').onclick=nuovoProgetto;
+  const bk=$('#bk');if(bk)bk.onclick=()=>{ST.proj=null;renderHome()};
+  document.querySelectorAll('[data-proj]').forEach(e=>e.onclick=()=>{ST.proj=e.dataset.proj;renderHome()});
+  document.querySelectorAll('[data-open]').forEach(e=>e.onclick=()=>toast('L\'editor sarà collegato nel prossimo passo.'));
+  document.querySelectorAll('[data-share]').forEach(e=>e.onclick=ev=>{ev.stopPropagation();condividi(e.dataset.share)});
+}
+function nuovoProgetto(){
+  const m=modal(`<h2 style="text-align:left;margin-top:0">Nuovo progetto</h2><label>Nome</label><input id="n" maxlength="80"><div class="err" id="err"></div>
+   <div class="row"><button class="btn" data-close>Annulla</button><button class="btn pri" id="ok">Crea</button></div>`);
+  $('#n').focus();
+  $('#ok').onclick=()=>busy($('#ok'),async()=>{
+    const nome=$('#n').value.trim();if(!nome)return setErr('Scrivi un nome.');
+    const{error}=await sb.from('progetti').insert({nome});
+    if(error)return setErr(msgErr(error));
+    m.close();toast('Progetto creato');showHome()});
+}
+function nuovaLavagna(){
+  const opts=ST.d.prog.map(p=>`<option value="${p.id}" ${p.id===ST.proj?'selected':''}>${esc(p.nome)}</option>`).join('');
+  const m=modal(`<h2 style="text-align:left;margin-top:0">Nuova lavagna</h2><label>Titolo</label><input id="n" maxlength="120" placeholder="Senza titolo">
+   <label>Progetto</label><select id="pj"><option value="">— nessun progetto —</option>${opts}</select><div class="err" id="err"></div>
+   <div class="row"><button class="btn" data-close>Annulla</button><button class="btn pri" id="ok">Crea</button></div>`);
+  $('#n').focus();
+  $('#ok').onclick=()=>busy($('#ok'),async()=>{
+    const o={titolo:$('#n').value.trim()||'Senza titolo'};if($('#pj').value)o.progetto_id=$('#pj').value;
+    const{error}=await sb.from('lavagne').insert(o);
+    if(error)return setErr(msgErr(error));
+    m.close();toast('Lavagna creata');showHome()});
+}
+
+/* ===== condivisione ===== */
+async function condividi(id){
+  const lav=ST.d.lav.find(x=>x.id===id);
+  const m=modal(`<h2 style="text-align:left;margin-top:0">Condividi «${esc(lav.titolo)}»</h2>
+   <div class="row"><input id="em" type="email" placeholder="Email della persona"><select id="ru" style="max-width:150px"><option value="lettore">Può leggere</option><option value="editor">Può modificare</option></select></div>
+   <div class="err" id="err"></div><button class="btn pri" id="inv" style="margin-top:6px">Invita</button>
+   <h3>Persone con accesso</h3><div id="lst"><p class="empty">Caricamento…</p></div>
+   <label style="display:flex;gap:8px;align-items:center;font-weight:400;color:var(--testo);margin-top:14px"><input id="pub" type="checkbox" style="width:auto" ${lav.link_pubblico?'checked':''}> Chiunque abbia il link può leggere (senza accesso)</label>
+   <button class="btn" data-close>Chiudi</button>`);
+  const lista=async()=>{
+    const{data,error}=await sb.rpc('membri_lavagna',{p_lavagna:id});
+    if(error){$('#lst').innerHTML=`<p class="empty">${esc(msgErr(error))}</p>`;return}
+    $('#lst').innerHTML=`<div class="dev"><div><b>Tu</b> <small>proprietario</small></div></div>`+
+     (data.length?data.map(x=>`<div class="dev"><div style="flex:1;overflow:hidden;text-overflow:ellipsis">${esc(x.email)}</div>
+      <select data-u="${x.user_id}" style="width:auto;padding:5px"><option value="lettore" ${x.ruolo==='lettore'?'selected':''}>Può leggere</option><option value="editor" ${x.ruolo==='editor'?'selected':''}>Può modificare</option></select>
+      <button class="mini" data-rm="${x.user_id}">✕</button></div>`).join(''):'');
+    m.el.querySelectorAll('[data-u]').forEach(s=>s.onchange=async()=>{
+      const{error}=await sb.from('membri').update({ruolo:s.value}).eq('lavagna_id',id).eq('user_id',s.dataset.u);
+      error?toast(msgErr(error),1):toast('Permesso aggiornato')});
+    m.el.querySelectorAll('[data-rm]').forEach(b=>b.onclick=async()=>{
+      const{error}=await sb.from('membri').delete().eq('lavagna_id',id).eq('user_id',b.dataset.rm);
+      error?toast(msgErr(error),1):lista()});
+  };
+  lista();
+  $('#inv').onclick=()=>busy($('#inv'),async()=>{setErr('');
+    const{error}=await sb.rpc('condividi',{p_lavagna:id,p_email:$('#em').value.trim(),p_ruolo:$('#ru').value});
+    if(error)return setErr(msgErr(error));
+    $('#em').value='';lista()});
+  $('#pub').onchange=async()=>{
+    const{error}=await sb.from('lavagne').update({link_pubblico:$('#pub').checked}).eq('id',id);
+    if(error){toast(msgErr(error),1);$('#pub').checked=!$('#pub').checked}else{lav.link_pubblico=$('#pub').checked;toast('Impostazione salvata')}};
+}
+
+/* ===== sicurezza account ===== */
+async function showSicurezza(){
+  shell('<span class="back" id="bk">← Indietro</span><h2 style="text-align:left">Sicurezza account</h2><div id="lst"><p class="empty">Caricamento…</p></div>');
+  $('#bk').onclick=showHome;
+  const{data}=await sb.auth.mfa.listFactors();const ver=data.totp||[];
+  const last=ver.length<=2;
+  $('#lst').innerHTML=ver.map(f=>`<div class="dev"><div>📱</div><div style="flex:1"><b>${esc(f.friendly_name||'Dispositivo')}</b><br><small>Aggiunto il ${new Date(f.created_at).toLocaleDateString('it-IT')}</small></div>
+    <button class="mini" data-rm="${f.id}" ${last?'disabled title="Servono almeno 2 dispositivi"':''}>Rimuovi</button></div>`).join('')+
+   `<button class="btn" id="add">+ Aggiungi dispositivo</button>
+    <div class="note">Non puoi rimuovere un dispositivo se ne resterebbero meno di due: aggiungine prima un altro.</div>`;
+  document.querySelectorAll('[data-rm]').forEach(b=>b.onclick=async()=>{
+    if(!confirm('Rimuovere questo dispositivo?'))return;
+    const{error}=await sb.auth.mfa.unenroll({factorId:b.dataset.rm});
+    error?toast(msgErr(error),1):(toast('Dispositivo rimosso'),showSicurezza())});
+  $('#add').onclick=async()=>{
+    const{data:d,error}=await enrollFactor('Dispositivo '+(ver.length+1)+' · '+new Date().toLocaleDateString('it-IT'));
+    if(error)return toast(msgErr(error),1);
+    const m=modal(`<h2 style="text-align:left;margin-top:0">Nuovo dispositivo</h2><img class="qr" alt="QR code" src="${esc(d.totp.qr_code)}">
+     <div class="secret">${esc(d.totp.secret)}</div><label>Codice a 6 cifre</label><div class="code" id="cb"></div><div class="err" id="err"></div>
+     <div class="row"><button class="btn" data-close>Annulla</button><button class="btn pri" id="ok">Conferma</button></div>`);
+    const val=codeBox($('#cb'));
+    $('#ok').onclick=()=>busy($('#ok'),async()=>{
+      const{error:e}=await sb.auth.mfa.challengeAndVerify({factorId:d.id,code:val()});
+      if(e)return setErr(msgErr(e));
+      m.close();toast('Dispositivo aggiunto');showSicurezza()});
+  };
+}
+
+/* ===== esporta / importa ===== */
+async function exportJson(){
+  const[p,l]=await Promise.all([sb.from('progetti').select('*').eq('owner_id',user.id),sb.from('lavagne').select('*').eq('owner_id',user.id)]);
+  if(p.error||l.error)return toast('Esportazione non riuscita',1);
+  const ids=l.data.map(x=>x.id);
+  const el=ids.length?await sb.from('elementi').select('*').in('lavagna_id',ids):{data:[]};
+  const blob=new Blob([JSON.stringify({app:CONFIG.app,versione:CONFIG.versione,progetti:p.data,lavagne:l.data,elementi:el.data},null,1)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='filo-dati-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href);
+  toast('Esportazione completata');
+}
+async function importJson(ev){
+  const f=ev.target.files[0];ev.target.value='';if(!f)return;
+  try{
+    const j=JSON.parse(await f.text());if(j.app!==CONFIG.app)throw new Error('Il file non è un export di Filo.');
+    const pm={};
+    for(const p of j.progetti||[]){const{data,error}=await sb.from('progetti').insert({nome:p.nome}).select('id').single();if(error)throw error;pm[p.id]=data.id}
+    for(const l of j.lavagne||[]){
+      const{data,error}=await sb.from('lavagne').insert({titolo:l.titolo,progetto_id:pm[l.progetto_id]||null}).select('id').single();if(error)throw error;
+      const els=(j.elementi||[]).filter(e=>e.lavagna_id===l.id).map(e=>({lavagna_id:data.id,dati:e.dati}));
+      if(els.length){const{error:e2}=await sb.from('elementi').insert(els);if(e2)throw e2}
+    }
+    toast('Importazione completata');showHome();
+  }catch(e){toast('Importazione non riuscita: '+msgErr(e),1)}
+}
+
+/* ===== avvio ===== */
+sb.auth.onAuthStateChange((ev)=>{
+  if(ev==='PASSWORD_RECOVERY'){recovery=true;setTimeout(showNewPass,0)}
+  else if(ev==='SIGNED_OUT'){ST={proj:null,q:'',d:null};setTimeout(showLogin,0)}
+});
+if(!/type=recovery/.test(location.hash))route();
+</script>
+</body>
+</html>
