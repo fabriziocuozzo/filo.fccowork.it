@@ -393,7 +393,9 @@ async function condividi(id){
    <div class="err" id="err"></div><button class="btn pri" id="inv" style="margin-top:6px">Invita</button>
    <h3>Persone con accesso</h3><div id="lst"><p class="empty">Caricamento…</p></div>
    <label style="display:flex;gap:8px;align-items:center;font-weight:400;color:var(--testo);margin-top:14px"><input id="pub" type="checkbox" style="width:auto" ${lav.link_pubblico?'checked':''}> Chiunque abbia il link può leggere (senza accesso)</label>
+   <div id="lkw" style="display:${lav.link_pubblico?'block':'none'}"><input id="lk" readonly value="${esc(location.origin+location.pathname.replace(/[^/]*$/,'')+'vista.html?l='+id)}" style="margin-top:8px"><button class="btn" id="cp" style="margin-top:8px">Copia link</button><p class="small" style="text-align:left">Chi ha il link vede la lavagna in sola lettura, senza registrarsi. Disattivando l'opzione il link smette di funzionare.</p></div>
    <button class="btn" data-close>Chiudi</button>`);
+  $('#cp').onclick=async()=>{try{await navigator.clipboard.writeText($('#lk').value);toast('Link copiato')}catch(e){$('#lk').select();toast('Seleziona e copia il link (Ctrl+C)')}};
   const lista=async()=>{
     const{data,error}=await sb.rpc('membri_lavagna',{p_lavagna:id});
     if(error){$('#lst').innerHTML=`<p class="empty">${esc(msgErr(error))}</p>`;return}
@@ -415,7 +417,7 @@ async function condividi(id){
     $('#em').value='';lista()});
   $('#pub').onchange=async()=>{
     const{error}=await sb.from('lavagne').update({link_pubblico:$('#pub').checked}).eq('id',id);
-    if(error){toast(msgErr(error),1);$('#pub').checked=!$('#pub').checked}else{lav.link_pubblico=$('#pub').checked;toast('Impostazione salvata')}};
+    if(error){toast(msgErr(error),1);$('#pub').checked=!$('#pub').checked}else{lav.link_pubblico=$('#pub').checked;$('#lkw').style.display=lav.link_pubblico?'block':'none';toast('Impostazione salvata')}};
 }
 
 /* ===== sicurezza account ===== */
