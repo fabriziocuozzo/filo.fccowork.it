@@ -142,6 +142,8 @@ body.ro #app{grid-template-columns:1fr}
 body.ro #top{grid-column:1}
 body.ro #stage{grid-column:1}
 #bNew{display:none}
+#crumb{position:absolute;left:12px;top:10px;z-index:6;display:none;max-width:calc(100% - 24px);background:rgba(255,255,255,.96);border:1px solid var(--bd);border-radius:10px;padding:6px 11px;font-size:12.5px;box-shadow:0 2px 8px rgba(15,23,42,.08);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#crumb span{cursor:pointer;color:var(--acc2)}#crumb span:hover{text-decoration:underline}
 @media (max-width:760px){body.ro #app{grid-template-rows:48px 1fr}body.ro #stage{grid-row:2}}
 #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#0f172a;color:#fff;padding:9px 16px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:200}
 #toast.on{opacity:1}
@@ -174,6 +176,7 @@ body.ro #stage{grid-column:1}
     <button class="btn" id="bOpen"></button>
     <button class="btn" id="bSave"></button>
     <button class="btn" id="bPng"></button>
+    <button class="btn" id="bPngAll"></button>
     <button class="btn ib" id="bNew" title="Nuova lavagna"></button>
     <input type="file" id="file" accept=".json,application/json" style="display:none">
   </div>
@@ -181,6 +184,8 @@ body.ro #stage{grid-column:1}
   <div id="stage">
     <svg id="svg" xmlns="http://www.w3.org/2000/svg"><defs id="defs"></defs><g id="world"></g></svg>
     <div id="hint"><b>Filo</b>Scegli uno strumento e disegna sul canvas<br>oppure usa <i>Genera da testo</i> per creare un flusso in automatico</div>
+    <div id="crumb"></div>
+    <input type="file" id="imgfile" accept="image/*" multiple style="display:none">
     <textarea id="ed" spellcheck="false"></textarea>
   </div>
   <div id="props"></div>
@@ -279,7 +284,8 @@ const UI={
  history:'<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><polyline points="3 3 3 8 8 8"/><polyline points="12 7 12 12 15 14"/>',
  folder:'<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
  sliders:'<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>',
- board:'<rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21l4-3 4 3"/>'
+ board:'<rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21l4-3 4 3"/>',
+ layers:'<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>'
 };
 function uic(n,s){s=s||20;return `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${UI[n]}</svg>`;}
 
@@ -330,12 +336,12 @@ function iconSVG(name,x,y,size,color,sw){
 
 /* ---------- modello ---------- */
 const SHAPES={rect:'Rettangolo',round:'Arrotondato',pill:'Pillola',ellipse:'Ellisse',diamond:'Decisione',parallelogram:'Dati',hexagon:'Esagono',cylinder:'Database',doc:'Documento'};
-const SIZES={rect:[160,70],round:[160,64],pill:[160,52],ellipse:[150,90],diamond:[180,104],parallelogram:[170,64],hexagon:[160,80],cylinder:[110,110],doc:[150,80],sticky:[160,140],text:[160,36],icon:[56,56],frame:[420,300],lane:[640,170]};
+const SIZES={rect:[160,70],round:[160,64],pill:[160,52],ellipse:[150,90],diamond:[180,104],parallelogram:[170,64],hexagon:[160,80],cylinder:[110,110],doc:[150,80],sticky:[160,140],text:[160,36],icon:[56,56],image:[220,150],frame:[420,300],lane:[640,170]};
 const STYLES=[['solid','Solido'],['shadow','Solido + ombra'],['gradient','Gradiente'],['gshadow','Gradiente + ombra'],['soft','Pastello'],['line','Lineare'],['dashed','Tratteggiato'],['neon','Neon']];
 const COLORS=['#2b87f0','#38bdf8','#14b8a6','#22c55e','#facc15','#fb923c','#ef4444','#ec4899','#8b5cf6','#6366f1','#64748b','#1e293b','#ffffff'];
 const EDGE_COL='#475569';
 
-let S={items:[],title:'Senza titolo',view:{x:320,y:140,k:1},defaults:{style:'gshadow',color:'#2b87f0',kind:'elbow'},grid:true,snap:true};
+let S={items:[],other:[],stack:[],rootView:null,title:'Senza titolo',view:{x:320,y:140,k:1},defaults:{style:'gshadow',color:'#2b87f0',kind:'elbow'},grid:true,snap:true};
 const SEL=new Set();
 let tool='select',pendingShape='round',hover=null,drag=null,editing=null,spaceDown=false,clipboard=null,lastDown={id:null,t:0};
 let hist=[],hi=-1,raf=0,exporting=false,iconMode='insert',RO=false;
@@ -350,6 +356,7 @@ function mkNode(shape,x,y,w,h,o){
  if(shape==='sticky'){n.color='#ffe066';n.style='shadow';n.fs=15;}
  if(shape==='text'){n.style='none';n.fs=18;n.color='#0f172a';}
  if(shape==='icon'){n.style='none';n.color='#2b87f0';}
+ if(shape==='image'){n.style='none';n.color='#94a3b8';n.sw=1;n.fs=13;}
  if(shape==='frame'||shape==='lane'){n.style='soft';n.bold=true;n.fs=14;}
  return Object.assign(n,o||{});
 }
@@ -475,10 +482,12 @@ function frameSVG(n,v){
 function nodeSVG(n){
  const v=visual(n);
  if(isFrame(n))return frameSVG(n,v);
+ if(n.shape==='image')return imageSVG(n);
  let s=`<g data-id="${n.id}" data-role="node" transform="translate(${n.x} ${n.y})">`;
  if(n.shape==='icon'||n.shape==='text'){
   s+=`<rect width="${n.w}" height="${n.h}" fill="transparent"/>`;
  }else{
+  if(n.sub)s+=subPages(n);
   s+=`<path d="${shapePath(n.shape,n.w,n.h)}" fill="${v.fill}" stroke="${v.stroke}" stroke-width="${v.sw}" stroke-linejoin="round"${v.dash?` stroke-dasharray="${v.dash}"`:''}${v.filter?` filter="${v.filter}"`:''}/>`;
  }
  if(n.shape==='icon'){
@@ -488,6 +497,7 @@ function nodeSVG(n){
   if(n.icon){const isz=clamp(Math.min(n.w,n.h)-22,14,28);s+=iconSVG(n.icon,14,(n.h-isz)/2,isz,v.text,2);}
   s+=textSVG(n,v);
  }
+ if(n.sub&&n.shape!=='icon'&&n.shape!=='text')s+=subBadge(n);
  return s+'</g>';
 }
 
@@ -833,6 +843,244 @@ function selChanged(){updateProps();render();}
 let toastT=0;
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),2400);}
 
+/* ---------- sotto-lavagne ---------- */
+// Ogni elemento ha lv = id del box che contiene la sotto-lavagna (assente = lavagna principale).
+// S.items = elementi del livello aperto; S.other = elementi di tutti gli altri livelli.
+// Ogni elemento resta una riga a sé nel database: nessuna modifica allo schema.
+let EXP_REFS=null;
+const curLevel=()=>S.stack.length?S.stack[S.stack.length-1].id:null;
+function tagLevel(){const lv=curLevel();S.items.forEach(i=>{if(lv)i.lv=lv;else delete i.lv;});}
+function allItems(){tagLevel();return S.items.concat(S.other);}
+function setAll(list){S.stack=[];S.items=[];S.other=[];list.forEach(i=>{(i.lv?S.other:S.items).push(i);});}
+const anyItem=id=>S.items.find(i=>i.id===id)||S.other.find(i=>i.id===id);
+let EXP_ALL=null; // durante l'esportazione: tutti gli elementi di tutti i livelli
+const subCount=id=>(EXP_ALL||S.other).filter(i=>i.lv===id&&i.type!=='edge').length;
+function resetHist(){hist=[snapshot()];hi=0;}
+function dropSubs(ids){ // elimina i livelli interni dei box rimossi (ricorsivo)
+ const q=[...ids];
+ while(q.length){
+  const id=q.pop(),sub=S.other.filter(i=>i.lv===id);
+  if(!sub.length)continue;
+  S.other=S.other.filter(i=>i.lv!==id);
+  sub.forEach(i=>{if(i.type==='node'&&i.sub)q.push(i.id);});
+ }
+}
+function cloneSub(oldId,newId){ // copia il contenuto della sotto-lavagna quando si duplica un box
+ const src=S.other.filter(i=>i.lv===oldId);if(!src.length)return;
+ const map=new Map(),out=[],deep=[];
+ src.forEach(i=>{if(i.type!=='edge')map.set(i.id,uid());});
+ src.forEach(i=>{
+  const c=JSON.parse(JSON.stringify(i));
+  if(i.type==='edge'){if(!map.has(i.from)||!map.has(i.to))return;c.from=map.get(i.from);c.to=map.get(i.to);c.id=uid();}
+  else c.id=map.get(i.id);
+  c.lv=newId;out.push(c);
+  if(c.type==='node'&&c.sub)deep.push([i.id,c.id]);
+ });
+ S.other=S.other.concat(out);
+ deep.forEach(a=>cloneSub(a[0],a[1]));
+}
+function switchLevel(stackNew){
+ commitEdit();
+ const top=S.stack.length?S.stack[S.stack.length-1]:null;
+ if(top)top.view=Object.assign({},S.view);else S.rootView=Object.assign({},S.view);
+ tagLevel();S.other=S.other.concat(S.items);
+ S.stack=stackNew;
+ const lv=curLevel();
+ S.items=S.other.filter(i=>(i.lv||null)===lv);
+ S.other=S.other.filter(i=>(i.lv||null)!==lv);
+ S.items.sort((a,b)=>(ord.get(a.id)??1e9)-(ord.get(b.id)??1e9)); // mantiene l'ordine di sovrapposizione
+ SEL.clear();hover=null;drag=null;
+ resetHist();
+ const v=stackNew.length?stackNew[stackNew.length-1].view:S.rootView;
+ if(v)S.view=v;
+ updateCrumb();updateProps();
+ if(!v)fitView();else render();
+}
+function enterSub(id){
+ const n=getItem(id);if(!n||n.type!=='node')return;
+ if(!n.sub){if(RO)return;n.sub=true;commit();}
+ switchLevel(S.stack.concat([{id,view:null}]));
+}
+function exitTo(depth){if(depth<S.stack.length)switchLevel(S.stack.slice(0,depth));}
+function exitSub(){exitTo(S.stack.length-1);}
+function checkStack(){
+ const bad=S.stack.findIndex(r=>!anyItem(r.id));
+ if(bad>=0){exitTo(bad);toast('La sotto-lavagna che stavi guardando è stata eliminata.');}
+}
+function updateCrumb(){
+ const c=$('#crumb');if(!c)return;
+ if(!S.stack.length){c.style.display='none';return;}
+ const lab=id=>{const n=anyItem(id);return n&&n.text?n.text.split('\n')[0]:'Senza titolo';};
+ let h='<span data-lv="0">'+esc(S.title||'Lavagna')+'</span>';
+ S.stack.forEach((r,i)=>{h+=' › '+(i===S.stack.length-1?'<b>'+esc(lab(r.id))+'</b>':'<span data-lv="'+(i+1)+'">'+esc(lab(r.id))+'</span>');});
+ c.innerHTML=h;c.style.display='block';
+}
+$('#crumb').addEventListener('click',e=>{const s=e.target.closest('[data-lv]');if(s)exitTo(+s.dataset.lv);});
+function subPages(n){
+ const p=shapePath(n.shape==='image'?'round':n.shape,n.w,n.h);
+ return `<path d="${p}" transform="translate(8 8)" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1.2"/><path d="${p}" transform="translate(4 4)" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.2"/>`;
+}
+function subBadge(n){
+ const c=subCount(n.id),lab=c>99?'99+':String(c);
+ let s=`<g transform="translate(${n.w-6} 6)" pointer-events="none"><circle r="11" fill="#2563eb" stroke="#fff" stroke-width="2"/>`;
+ s+=c?`<text text-anchor="middle" dominant-baseline="central" font-family="${FONT}" font-size="${c>9?9:11}" font-weight="700" fill="#fff">${lab}</text>`
+     :`<g transform="translate(-7 -7) scale(.58)" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${UI.layers}</g>`;
+ s+='</g>';
+ if(exporting&&EXP_REFS&&EXP_REFS.has(n.id)){
+  const t='→ '+EXP_REFS.get(n.id),tw=textW(t,12,true)+14,ty=n.shape==='image'?-26:n.h+4;
+  s+=`<g transform="translate(${n.w} ${ty})"><rect x="${-tw}" width="${tw}" height="20" rx="6" fill="#2563eb"/><text x="${-tw/2}" y="10" text-anchor="middle" dominant-baseline="central" font-family="${FONT}" font-size="12" font-weight="600" fill="#fff">${esc(t)}</text></g>`;
+ }
+ return s;
+}
+
+/* ---------- immagini (ridimensionate al caricamento) ---------- */
+const IMG_MAX=1000,IMG_LIMIT=220000; // lato massimo in px e peso massimo (caratteri del dataURL)
+const IMGU=new Map();
+function imgSrc(n){ // nella lavagna uso un blob: URL (leggero da ridisegnare); nell'esportazione il dataURL
+ if(exporting)return n.img;
+ const c=IMGU.get(n.id);if(c&&c.s===n.img)return c.u;
+ let u=n.img;
+ try{const m=/^data:([^;]+);base64,(.*)$/.exec(n.img);if(m){const b=atob(m[2]),a=new Uint8Array(b.length);for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i);u=URL.createObjectURL(new Blob([a],{type:m[1]}));}}catch(e){}
+ if(c&&c.u.indexOf('blob:')===0)URL.revokeObjectURL(c.u);
+ IMGU.set(n.id,{s:n.img,u});return u;
+}
+function imageSVG(n){
+ const r=8,sw=n.sw==null?1:n.sw,col=n.color||'#94a3b8',fs=n.fs||13;
+ let s=`<g data-id="${n.id}" data-role="node" transform="translate(${n.x} ${n.y})">`;
+ if(n.sub)s+=subPages(n);
+ s+=`<clipPath id="ci${n.id}"><rect width="${n.w}" height="${n.h}" rx="${r}"/></clipPath><rect width="${n.w}" height="${n.h}" rx="${r}" fill="#f1f5f9"/>`;
+ if(n.img)s+=`<image href="${imgSrc(n)}" width="${n.w}" height="${n.h}" preserveAspectRatio="xMidYMid slice" clip-path="url(#ci${n.id})"/>`;
+ s+=`<rect width="${n.w}" height="${n.h}" rx="${r}" fill="none" stroke="${col}" stroke-width="${sw}"/>`;
+ if(n.text)s+=`<text x="${n.w/2}" y="${n.h+fs+4}" text-anchor="middle" font-family="${FONT}" font-size="${fs}" font-weight="${n.bold?600:400}" fill="${n.textColor||'#334155'}" pointer-events="none" style="user-select:none">${esc(truncText(n.text,n.w+40,fs,n.bold))}</text>`;
+ if(n.sub)s+=subBadge(n);
+ return s+'</g>';
+}
+function loadImageFile(f){
+ return new Promise((res,rej)=>{
+  if(f.size>25*1024*1024)return rej(new Error('file troppo grande'));
+  const url=URL.createObjectURL(f),im=new Image();
+  im.onload=()=>{
+   URL.revokeObjectURL(url);
+   try{
+    const nw=im.naturalWidth||300,nh=im.naturalHeight||200;
+    let sc=Math.min(1,IMG_MAX/Math.max(nw,nh)),q=.82,out='';
+    for(let t=0;t<8;t++){
+     const w=Math.max(1,Math.round(nw*sc)),h=Math.max(1,Math.round(nh*sc));
+     const c=document.createElement('canvas');c.width=w;c.height=h;
+     const x=c.getContext('2d');x.fillStyle='#ffffff';x.fillRect(0,0,w,h);x.drawImage(im,0,0,w,h);
+     out=c.toDataURL('image/jpeg',q);
+     if(out.length<=IMG_LIMIT)break;
+     if(q>.55)q-=.1;else sc*=.8;
+    }
+    if(out.length>IMG_LIMIT*2)return rej(new Error('immagine troppo pesante'));
+    res({src:out,ar:nw/nh});
+   }catch(e){rej(e);}
+  };
+  im.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('formato non valido'));};
+  im.src=url;
+ });
+}
+async function addImages(files,at){
+ if(RO)return;
+ const list=[...files].filter(f=>/^image\//.test(f.type));
+ if(!list.length)return;
+ const r=svg.getBoundingClientRect();
+ let p=at||{x:(r.width/2-S.view.x)/S.view.k-110,y:(r.height/2-S.view.y)/S.view.k-75};
+ const ids=[];
+ for(const f of list){
+  try{
+   const im=await loadImageFile(f);
+   let w=240,h=Math.round(w/im.ar);
+   if(h>320){h=320;w=Math.round(h*im.ar);}
+   const n=mkNode('image',sn(p.x),sn(p.y),Math.max(40,w),Math.max(30,h),{img:im.src,ar:im.ar});
+   S.items.push(n);ids.push(n.id);p={x:p.x+28,y:p.y+28};
+  }catch(e){toast('Immagine non caricata: '+((e&&e.message)||e));}
+ }
+ if(ids.length){SEL.clear();ids.forEach(i=>SEL.add(i));commit();selChanged();}
+}
+$('#imgfile').addEventListener('change',e=>{addImages(e.target.files);e.target.value='';});
+document.addEventListener('paste',e=>{
+ const tn=e.target&&e.target.tagName;if(tn==='INPUT'||tn==='TEXTAREA'||RO)return;
+ const files=[...((e.clipboardData&&e.clipboardData.files)||[])].filter(f=>/^image\//.test(f.type));
+ if(files.length){e.preventDefault();addImages(files);return;}
+ if(clipboard){e.preventDefault();insertClones(clipboard,24);}
+});
+stage.addEventListener('dragover',e=>{if(!RO&&e.dataTransfer&&[...e.dataTransfer.types].indexOf('Files')>=0)e.preventDefault();});
+stage.addEventListener('drop',e=>{
+ if(RO)return;
+ const f=[...e.dataTransfer.files].filter(x=>/^image\//.test(x.type));
+ if(!f.length)return;
+ e.preventDefault();const p=toWorld(e);addImages(f,{x:p.x-110,y:p.y-75});
+});
+
+/* ---------- esportazione: PNG per livello e ZIP ---------- */
+function levelBlob(items,head){
+ return new Promise(resolve=>{
+  const keep=S.items;S.items=items;
+  let b,inner,defs;
+  try{b=contentBounds()||{x:0,y:0,w:300,h:80};exporting=true;inner=worldSVG(false);defs=defsInner();}
+  finally{exporting=false;S.items=keep;}
+  const pad=40,topH=head?58:0,W=Math.ceil(b.w+pad*2),H=Math.ceil(b.h+pad*2+topH),vx=b.x-pad,vy=b.y-pad-topH;
+  let hd='';
+  if(head)hd=`<rect x="${vx}" y="${vy}" width="${W}" height="${topH}" fill="#eff6ff"/><text x="${vx+16}" y="${vy+24}" font-family="${FONT}" font-size="17" font-weight="700" fill="#1e3a8a">${esc(head.title)}</text><text x="${vx+16}" y="${vy+45}" font-family="${FONT}" font-size="12" fill="#475569">${esc(head.sub||'')}</text>`;
+  const str=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="${vx} ${vy} ${W} ${H}"><defs>${defs}</defs><rect x="${vx}" y="${vy}" width="${W}" height="${H}" fill="#ffffff"/>${hd}${inner}</svg>`;
+  const scale=Math.min(2,7000/Math.max(W,H)),img=new Image();
+  img.onload=()=>{
+   const c=document.createElement('canvas');c.width=Math.round(W*scale);c.height=Math.round(H*scale);
+   const x=c.getContext('2d');x.scale(scale,scale);x.drawImage(img,0,0,W,H);
+   c.toBlob(bl=>resolve(bl),'image/png');
+  };
+  img.onerror=()=>resolve(null);
+  img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(str);
+ });
+}
+const CRC_T=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+function crc32(u){let c=0xFFFFFFFF;for(let i=0;i<u.length;i++)c=CRC_T[(c^u[i])&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0;}
+function makeZip(files){ // ZIP senza compressione, senza librerie
+ const enc=new TextEncoder(),parts=[],cd=[];let off=0;
+ const d=new Date(),dt=((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate(),tm=(d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1);
+ files.forEach(f=>{
+  const nm=enc.encode(f.name),crc=crc32(f.data),sz=f.data.length;
+  const lh=new DataView(new ArrayBuffer(30));
+  lh.setUint32(0,0x04034b50,true);lh.setUint16(4,20,true);lh.setUint16(6,0x0800,true);lh.setUint16(8,0,true);lh.setUint16(10,tm,true);lh.setUint16(12,dt,true);lh.setUint32(14,crc,true);lh.setUint32(18,sz,true);lh.setUint32(22,sz,true);lh.setUint16(26,nm.length,true);lh.setUint16(28,0,true);
+  parts.push(new Uint8Array(lh.buffer),nm,f.data);
+  const ch=new DataView(new ArrayBuffer(46));
+  ch.setUint32(0,0x02014b50,true);ch.setUint16(4,20,true);ch.setUint16(6,20,true);ch.setUint16(8,0x0800,true);ch.setUint16(10,0,true);ch.setUint16(12,tm,true);ch.setUint16(14,dt,true);ch.setUint32(16,crc,true);ch.setUint32(20,sz,true);ch.setUint32(24,sz,true);ch.setUint16(28,nm.length,true);ch.setUint32(42,off,true);
+  cd.push(new Uint8Array(ch.buffer),nm);
+  off+=30+nm.length+sz;
+ });
+ const cdSize=cd.reduce((a,b)=>a+b.length,0),e=new DataView(new ArrayBuffer(22));
+ e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cdSize,true);e.setUint32(16,off,true);
+ return new Blob(parts.concat(cd,[new Uint8Array(e.buffer)]),{type:'application/zip'});
+}
+async function exportAll(){
+ const all=allItems(),lv=id=>all.filter(i=>(i.lv||null)===id);
+ const label=n=>(n.text||'Senza titolo').split('\n')[0];
+ const levels=[];
+ (function walk(id,num,path){
+  const items=lv(id),subs=items.filter(i=>i.type==='node'&&i.sub);
+  levels.push({num,items,path,kids:subs.map((n,k)=>({n,num:num+'.'+(k+1)}))});
+  subs.forEach((n,k)=>walk(n.id,num+'.'+(k+1),path.concat(label(n))));
+ })(null,'1',[]);
+ if(levels.length===1){exportPNG();return;}
+ EXP_REFS=new Map();levels.forEach(L=>L.kids.forEach(k=>EXP_REFS.set(k.n.id,k.num)));
+ EXP_ALL=all;
+ toast('Preparo lo ZIP…');
+ const enc=new TextEncoder(),files=[],idx=['Indice delle lavagne','Titolo: '+(S.title||'Lavagna'),''];
+ try{
+  for(const L of levels){
+   const name=L.path.length?L.path.join(' › '):(S.title||'Lavagna');
+   const bl=await levelBlob(L.items,{title:L.num+' · '+name,sub:L.kids.length?'Contiene: '+L.kids.map(k=>k.num+' ('+label(k.n)+')').join(' · '):''});
+   if(!bl)throw new Error('immagine '+L.num);
+   files.push({name:L.num+'.png',data:new Uint8Array(await bl.arrayBuffer())});
+   idx.push(L.num+'\t'+name+(L.kids.length?'  →  contiene '+L.kids.map(k=>k.num).join(', '):''));
+  }
+  files.push({name:'indice.txt',data:enc.encode(idx.join('\r\n'))});
+  download(makeZip(files),fname()+'.zip');toast('ZIP esportato: '+levels.length+' lavagne.');
+ }catch(e){toast('Esportazione non riuscita: '+((e&&e.message)||e));}
+ finally{EXP_REFS=null;EXP_ALL=null;}
+}
+
 /* ---------- editing testo ---------- */
 function layoutEditor(){
  if(!editing)return;
@@ -882,7 +1130,7 @@ function commitEdit(){
   if(ctx.kind==='node'){
    it.text=ed.value;
    const fs=it.fs||14,lines=wrapLines(it.text,textBox(it).w,fs,it.bold).length,need=Math.ceil(lines*fs*1.28+22);
-   if(need>it.h&&it.shape!=='text'&&!isFrame(it))it.h=need;
+   if(need>it.h&&it.shape!=='text'&&it.shape!=='image'&&!isFrame(it))it.h=need;
    if(it.shape==='text'){it.h=Math.max(30,Math.ceil(lines*fs*1.28+14));}
   }else it.label=ed.value.replace(/\n/g,' ');
  }
@@ -921,7 +1169,7 @@ function collectForCopy(){
  return list;
 }
 function insertClones(list,off){
- const map=new Map(),out=[];
+ const map=new Map(),out=[],subs=[];
  list.forEach(i=>{if(i.type!=='edge')map.set(i.id,uid());});
  const gmap=new Map();
  list.forEach(i=>{
@@ -930,7 +1178,7 @@ function insertClones(list,off){
    if(!map.has(i.from)||!map.has(i.to))return;
    c.from=map.get(i.from);c.to=map.get(i.to);c.id=uid();
   }else{
-   c.id=map.get(i.id);
+   c.id=map.get(i.id);if(c.sub)subs.push([i.id,c.id]);
    if(c.grp){if(!gmap.has(c.grp))gmap.set(c.grp,uid());c.grp=gmap.get(c.grp);}
    if(c.type==='node'||c.type==='pen'){c.x+=off;c.y+=off;}
    else if(c.type==='line'){c.x1+=off;c.y1+=off;c.x2+=off;c.y2+=off;}
@@ -938,11 +1186,13 @@ function insertClones(list,off){
   out.push(c);
  });
  out.forEach(c=>S.items.push(c));
+ subs.forEach(a=>cloneSub(a[0],a[1]));
  SEL.clear();out.forEach(c=>{if(c.type!=='edge')SEL.add(c.id);});
  selChanged();commit();
 }
 function delSel(){
  if(!SEL.size)return;
+ dropSubs([...SEL]);
  S.items=S.items.filter(i=>!SEL.has(i.id)&&!(i.type==='edge'&&(SEL.has(i.from)||SEL.has(i.to))));
  SEL.clear();selChanged();commit();
 }
@@ -996,6 +1246,11 @@ svg.addEventListener('pointerdown',e=>{
  const el=e.target.closest?e.target.closest('[data-role]'):null;
  const role=el?el.dataset.role:null,id=el?el.dataset.id:null;
  try{svg.setPointerCapture(e.pointerId);}catch(x){}
+ if(RO&&id){ // in sola lettura: doppio clic su un box con sotto-lavagna la apre
+  const it0=getItem(id),t0=Date.now();
+  if(it0&&it0.type==='node'&&it0.sub&&lastDown.id===id&&t0-lastDown.t<380){lastDown={id:null,t:0};enterSub(id);return;}
+  lastDown={id:id,t:t0};
+ }
  if(e.button===1||e.button===2||tool==='hand'||spaceDown||(e.pointerType==='touch'&&tool==='select'&&!id)){
   drag={type:'pan',sx:e.clientX,sy:e.clientY,vx:S.view.x,vy:S.view.y};stage.classList.add('t-pan');return;
  }
@@ -1007,7 +1262,7 @@ svg.addEventListener('pointerdown',e=>{
   if(role==='lend'){drag={type:'lend',id:id,end:el.dataset.end};return;}
   if(id){
    const it=getItem(id);if(!it)return;
-   if(dbl){if(it.type==='node')startEdit(id);else if(it.type==='edge')startEdgeEdit(id);lastDown={id:null,t:0};return;}
+   if(dbl){if(it.type==='node'){if(it.sub)enterSub(id);else startEdit(id);}else if(it.type==='edge')startEdgeEdit(id);lastDown={id:null,t:0};return;}
    if(e.shiftKey){const gi=groupIds(id);if(SEL.has(id))gi.forEach(x=>SEL.delete(x));else gi.forEach(x=>SEL.add(x));}
    else if(!SEL.has(id)){SEL.clear();groupIds(id).forEach(x=>SEL.add(x));}
    selChanged();
@@ -1239,6 +1494,7 @@ document.addEventListener('keydown',e=>{
  const tg=e.target,tn=tg&&tg.tagName;
  if(tn==='INPUT'||tn==='TEXTAREA'||tn==='SELECT')return;
  const mod=e.ctrlKey||e.metaKey,k=e.key.toLowerCase();
+ if(e.altKey&&e.key==='ArrowLeft'&&S.stack.length){e.preventDefault();exitSub();return;}
  if(RO){
   if(mod&&k==='1'){e.preventDefault();fitView();}
   else if(mod&&k==='0'){e.preventDefault();S.view.k=1;render();}
@@ -1249,7 +1505,7 @@ document.addEventListener('keydown',e=>{
  if(mod&&k==='y'){e.preventDefault();redo();return;}
  if(mod&&k==='a'){e.preventDefault();SEL.clear();S.items.forEach(i=>{if(i.type!=='edge')SEL.add(i.id);});selChanged();return;}
  if(mod&&k==='c'){const l=collectForCopy();if(l.length)clipboard=l;return;}
- if(mod&&k==='v'){if(clipboard){e.preventDefault();insertClones(clipboard,24);}return;}
+ if(mod&&k==='v')return; // l'incolla (immagini o elementi copiati) è gestito dall'evento paste
  if(mod&&k==='d'){e.preventDefault();const l=collectForCopy();if(l.length)insertClones(l,24);return;}
  if(mod&&k==='s'){e.preventDefault();saveJSON();return;}
  if(mod&&k==='g'){e.preventDefault();act(e.shiftKey?'ungroup':'group');commit();updateProps();return;}
@@ -1294,7 +1550,7 @@ document.addEventListener('keydown',e=>{
 /* ---------- toolbar e popover ---------- */
 const TOOLS=[
  ['select','pointer','Selezione (V)'],['hand','hand','Sposta vista (H o Spazio)'],'-',
- ['sticky','note','Nota adesiva (N)'],['shape','shapes','Forme (R, O, D)'],['text','text','Testo (T)'],['iconpop','star','Icone (I)'],'-',
+ ['sticky','note','Nota adesiva (N)'],['shape','shapes','Forme (R, O, D)'],['text','text','Testo (T)'],['iconpop','star','Icone (I)'],['imgpick','image','Immagine (puoi anche incollare o trascinare un file)'],'-',
  ['connect','connect','Connettore (C)'],['line','line','Linea (L)'],['arrow','arrow','Freccia (A)'],['pen','pen','Penna (P)']
 ];
 (function buildTools(){
@@ -1307,6 +1563,7 @@ const TOOLS=[
    ev.stopPropagation();
    if(t[0]==='shape'){togglePop('shape',b);return;}
    if(t[0]==='iconpop'){togglePop('icon',b,'insert');return;}
+   if(t[0]==='imgpick'){closePops();$('#imgfile').click();return;}
    closePops();setTool(t[0]);
   });
   box.appendChild(b);
@@ -1390,7 +1647,7 @@ function styleTiles(cur,c,act){
 }
 function nodePanel(nodes){
  const n=nodes[0];
- const special=nodes.some(x=>x.shape==='icon'||x.shape==='text');
+ const special=nodes.some(x=>x.shape==='icon'||x.shape==='text'||x.shape==='image');
  const regular=nodes.every(x=>SHAPES[x.shape]||x.shape==='sticky');
  let h='';
  if(regular)h+=`<div class="sec"><div class="lab">FORMA</div><div class="shp">${Object.keys(SHAPES).map(s=>shapeBtn(s,n.shape===s,'shape')).join('')}</div></div>`;
@@ -1400,7 +1657,9 @@ function nodePanel(nodes){
   h+=`<div class="sec"><div class="lab">TESTO</div><div class="row" style="margin-bottom:8px"><select data-act="fs" style="width:84px">${[10,12,13,14,16,18,20,24,28,32,40,56].map(v=>`<option ${n.fs==v?'selected':''}>${v}</option>`).join('')}</select><button class="btn ib ${n.bold?'on':''}" data-act="bold" style="font-weight:800;border-color:var(--bd)">B</button><span class="hint2">Colore</span><input type="color" data-act="tcolor" value="${/^#[0-9a-f]{6}$/i.test(n.textColor||'')?n.textColor:'#0f172a'}"><button class="btn" style="height:26px;padding:0 8px;font-size:11px" data-act="tcolor" data-val="auto">Auto</button></div></div>`;
  }
  h+=`<div class="sec"><div class="lab">${n.shape==='icon'?'SPESSORE TRATTO':'SPESSORE BORDO'}: ${n.sw==null?2:n.sw}</div><input type="range" min="${n.shape==='icon'?0.5:0}" max="8" step="0.5" value="${n.sw==null?2:n.sw}" data-act="sw"></div>`;
- if(n.shape!=='text'&&!isFrame(n))h+=`<div class="sec"><div class="lab">ICONA ${n.shape==='icon'?'':'NEL BOX'}</div><div class="row"><button class="btn" data-act="iconpick">${n.icon?'Cambia icona':'Scegli icona'}</button>${n.icon&&n.shape!=='icon'?'<button class="btn" data-act="iconclear">Rimuovi</button>':''}</div></div>`;
+ if(n.shape!=='text'&&n.shape!=='image'&&!isFrame(n))h+=`<div class="sec"><div class="lab">ICONA ${n.shape==='icon'?'':'NEL BOX'}</div><div class="row"><button class="btn" data-act="iconpick">${n.icon?'Cambia icona':'Scegli icona'}</button>${n.icon&&n.shape!=='icon'?'<button class="btn" data-act="iconclear">Rimuovi</button>':''}</div></div>`;
+ if(n.shape==='image')h+=`<div class="sec"><div class="lab">IMMAGINE</div><button class="btn" data-act="imgar">Proporzioni originali</button><div class="hint2" style="margin-top:6px">Il testo del box diventa la didascalia sotto l'immagine.</div></div>`;
+ if(nodes.length===1&&!isFrame(n)&&n.shape!=='text'&&n.shape!=='icon')h+=`<div class="sec"><div class="lab">SOTTO-LAVAGNA</div>${n.sub?`<div class="hint2" style="margin-bottom:6px">Contiene ${subCount(n.id)} elementi</div><div class="row"><button class="btn pri" data-act="opensub">Apri</button><button class="btn" data-act="rmsub" style="color:#dc2626">Rimuovi</button></div>`:`<button class="btn" data-act="mksub">Crea sotto-lavagna</button>`}<div class="hint2" style="margin-top:6px">Doppio clic sul box per aprirla · <kbd>Alt</kbd>+<kbd>←</kbd> per tornare indietro</div></div>`;
  return h;
 }
 function edgePanel(edges){
@@ -1527,6 +1786,9 @@ function act(a,v){
   case 'pw':P().forEach(p=>p.w=+v);break;
   case 'front':{const ids=[...SEL];const m=S.items.filter(i=>ids.includes(i.id));S.items=S.items.filter(i=>!ids.includes(i.id)).concat(m);break;}
   case 'back':{const ids=[...SEL];const m=S.items.filter(i=>ids.includes(i.id));S.items=m.concat(S.items.filter(i=>!ids.includes(i.id)));break;}
+  case 'mksub':case 'opensub':{const id=[...SEL][0];if(id)enterSub(id);return;}
+  case 'rmsub':{const id=[...SEL][0],n=getItem(id);if(n&&n.sub&&(!subCount(id)||confirm('Eliminare la sotto-lavagna e tutto il suo contenuto?'))){dropSubs([id]);delete n.sub;}break;}
+  case 'imgar':{selOf('node').forEach(n=>{if(n.shape==='image'&&n.ar)n.h=Math.round(n.w/n.ar);});break;}
   case 'dup':{const l=collectForCopy();if(l.length)insertClones(l,24);return;}
   case 'del':delSel();return;
   case 'align':alignSel(v);break;
@@ -1799,7 +2061,7 @@ function openGen(){
  setTimeout(()=>$('#gtxt').focus(),0);
 }
 function placeOut(out,clear){
- if(clear)S.items=[];
+ if(clear){dropSubs(S.items.map(i=>i.id));S.items=[];}
  const existing=contentBounds(),nb=contentBounds(out);
  let ox=0,oy=0;
  if(existing&&nb){ox=existing.x+existing.w+120-nb.x;oy=existing.y-nb.y;}
@@ -1871,12 +2133,12 @@ function download(blob,name){
 }
 const fname=()=>(S.title||'lavagna').replace(/[^\w\-àèéìòù ]+/gi,'').trim().replace(/\s+/g,'_')||'filo';
 function saveJSON(){
- download(new Blob([JSON.stringify({app:'filo',v:1,title:S.title,items:S.items,defaults:S.defaults},null,1)],{type:'application/json'}),fname()+'.json');
+ download(new Blob([JSON.stringify({app:'filo',v:2,title:S.title,items:allItems(),defaults:S.defaults},null,1)],{type:'application/json'}),fname()+'.json');
  toast('File JSON salvato.');
 }
 function loadObj(o){
  if(!o||!Array.isArray(o.items))throw new Error('formato');
- S.items=o.items;S.title=o.title||'Lavagna';
+ setAll(o.items);S.rootView=null;updateCrumb();S.title=o.title||'Lavagna';
  if(o.defaults)S.defaults=Object.assign(S.defaults,o.defaults);
  $('#title').value=S.title;SEL.clear();
  hist=[];hi=-1;commit();updateProps();fitView();
@@ -1888,22 +2150,8 @@ $('#file').addEventListener('change',e=>{
  r.readAsText(f);e.target.value='';
 });
 function exportPNG(){
- const b=contentBounds();
- if(!b){toast('La lavagna è vuota.');return;}
- const pad=40,W=Math.ceil(b.w+pad*2),H=Math.ceil(b.h+pad*2);
- exporting=true;
- let inner;
- try{inner=worldSVG(false);}finally{exporting=false;}
- const str=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="${b.x-pad} ${b.y-pad} ${W} ${H}"><defs>${defsInner()}</defs><rect x="${b.x-pad}" y="${b.y-pad}" width="${W}" height="${H}" fill="#ffffff"/>${inner}</svg>`;
- const scale=Math.min(2,7000/Math.max(W,H));
- const img=new Image();
- img.onload=()=>{
-  const c=document.createElement('canvas');c.width=Math.round(W*scale);c.height=Math.round(H*scale);
-  const x=c.getContext('2d');x.scale(scale,scale);x.drawImage(img,0,0,W,H);
-  c.toBlob(bl=>{if(bl){download(bl,fname()+'.png');toast('PNG esportato.');}else toast('Esportazione non riuscita.');},'image/png');
- };
- img.onerror=()=>toast('Esportazione non riuscita.');
- img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(str);
+ if(!contentBounds()){toast('La lavagna è vuota.');return;}
+ levelBlob(S.items,null).then(bl=>{if(bl){download(bl,fname()+'.png');toast('PNG esportato.');}else toast('Esportazione non riuscita.');});
 }
 function newBoard(showW){
  if(S.items.length&&!confirm('Vuoi iniziare una nuova lavagna? Quella attuale verrà cancellata (puoi annullare con Ctrl+Z).'))return false;
@@ -1962,6 +2210,8 @@ $('#bGen').addEventListener('click',openGen);
 $('#bOpen').addEventListener('click',()=>$('#file').click());
 $('#bSave').addEventListener('click',saveJSON);
 $('#bPng').addEventListener('click',exportPNG);
+$('#bPngAll').innerHTML=uic('layers',16)+' Esporta tutto';
+$('#bPngAll').addEventListener('click',exportAll);
 $('#bNew').addEventListener('click',()=>newBoard(true));
 $('#title').addEventListener('input',e=>{S.title=e.target.value;});
 $('#title').addEventListener('change',()=>commit());
@@ -2005,12 +2255,14 @@ async function runSync(){
  }finally{syncing=false;}
 }
 async function syncOnce(){
- // ordine di sovrapposizione stabile: i nuovi elementi vanno in fondo; se l'ordine cambia si rinumera tutto
+ // elementi di tutti i livelli; ordine di sovrapposizione stabile: i nuovi vanno in fondo, se cambia si rinumera il livello aperto
+ const all=allItems();
  let reorder=false,last=-Infinity,max=-1;
+ ord.forEach(v=>{if(v>max)max=v;});
  for(const it of S.items){const o=ord.get(it.id);if(o!==undefined){if(o<=last){reorder=true;break;}last=o;}}
- if(reorder){S.items.forEach((it,i)=>ord.set(it.id,i));max=S.items.length-1;}
- else{ord.forEach(v=>{if(v>max)max=v;});S.items.forEach(it=>{if(!ord.has(it.id))ord.set(it.id,++max);});}
- const cur=new Map(S.items.map(i=>[i.id,i]));
+ if(reorder)S.items.forEach(it=>ord.set(it.id,++max));
+ all.forEach(it=>{if(!ord.has(it.id))ord.set(it.id,++max);});
+ const cur=new Map(all.map(i=>[i.id,i]));
  const ins=[],upd=[],del=[],undo=[];
  cur.forEach((it,id)=>{
   const data=Object.assign({},it,{_o:ord.get(id)}),j=canon(data),k=known.get(id);
@@ -2037,18 +2289,26 @@ function onRemote(p){
  if(p.eventType==='DELETE'){
   const id=rowToItem.get(p.old&&p.old.id);if(!id)return;
   known.delete(id);rowToItem.delete(p.old.id);ord.delete(id);
-  S.items=S.items.filter(i=>i.id!==id);SEL.delete(id);updateProps();render();return;
+  S.items=S.items.filter(i=>i.id!==id);S.other=S.other.filter(i=>i.id!==id);SEL.delete(id);
+  checkStack();updateCrumb();updateProps();render();return;
  }
  const row=p.new;if(!row||row.lavagna_id!==BID)return;
  const d=row.dati||{},id=d.id;if(!id)return;
  const j=canon(d),k=known.get(id);
  if(k&&k.json===j)return;                       // è l'eco di una nostra modifica
  known.set(id,{row:row.id,json:j});rowToItem.set(row.id,id);ord.set(id,d._o);
- const item=stripO(d),idx=S.items.findIndex(i=>i.id===id);
- if(idx>=0){if(drag&&drag.orig&&drag.orig.has&&drag.orig.has(id))return;S.items[idx]=item;}
- else{let at=S.items.findIndex(i=>(ord.get(i.id)??-1)>d._o);if(at<0)at=S.items.length;S.items.splice(at,0,item);}
+ const item=stripO(d),toCur=(d.lv||null)===curLevel();
+ const iC=S.items.findIndex(i=>i.id===id),iO=S.other.findIndex(i=>i.id===id);
+ if(toCur){
+  if(iO>=0)S.other.splice(iO,1);
+  if(iC>=0){if(drag&&drag.orig&&drag.orig.has&&drag.orig.has(id))return;S.items[iC]=item;}
+  else{let at=S.items.findIndex(i=>(ord.get(i.id)??-1)>d._o);if(at<0)at=S.items.length;S.items.splice(at,0,item);}
+ }else{
+  if(iC>=0){S.items.splice(iC,1);SEL.delete(id);}
+  if(iO>=0)S.other[iO]=item;else S.other.push(item);
+ }
  if(SEL.has(id))updateProps();
- render();
+ updateCrumb();render();
 }
 async function fetchAll(){
  const out=[];
@@ -2079,10 +2339,7 @@ async function boot(){
  RO=!(mine||role==='editor');
  document.body.classList.toggle('ro',RO);
  const bd=$('#rbadge');if(!mine){bd.style.display='inline-block';bd.textContent=RO?'può leggere':'può modificare';}
- rows.filter(r=>r.dati&&r.dati.id).sort((a,b)=>(a.dati._o??1e9)-(b.dati._o??1e9)).forEach(r=>{
-  known.set(r.dati.id,{row:r.id,json:canon(r.dati)});rowToItem.set(r.id,r.dati.id);ord.set(r.dati.id,r.dati._o);
-  S.items.push(stripO(r.dati));
- });
+ loadRows(rows);
  S.title=savedTitle=lav.data.titolo||'Senza titolo';
  const ti=$('#title');ti.value=S.title;ti.disabled=RO;
  syncToggles();setTool('select');
@@ -2090,7 +2347,13 @@ async function boot(){
  loaded=true;setStat(RO?'Sola lettura':'Salvato ✓',RO?'':'#16a34a');
  updateProps();doRender();fitView();
  sb.channel('elementi-'+BID).on('postgres_changes',{event:'*',schema:CONFIG.app,table:'elementi',filter:'lavagna_id=eq.'+BID},onRemote).subscribe();
- window.__lav={S,SEL,render:doRender,act,setTool,exportPNG,startEdit,known,ord};
+ window.__lav={S,SEL,render:doRender,act,setTool,exportPNG,exportAll,enterSub,exitSub,addImages,known,ord};
+}
+function loadRows(rows){ // ogni riga = un elemento; lv indica a quale sotto-lavagna appartiene
+ rows.filter(r=>r.dati&&r.dati.id).sort((a,b)=>(a.dati._o??1e9)-(b.dati._o??1e9)).forEach(r=>{
+  known.set(r.dati.id,{row:r.id,json:canon(r.dati)});rowToItem.set(r.id,r.dati.id);ord.set(r.dati.id,r.dati._o);
+  const it=stripO(r.dati);(it.lv?S.other:S.items).push(it);
+ });
 }
 boot();
 })();
