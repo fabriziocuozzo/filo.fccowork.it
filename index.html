@@ -162,7 +162,8 @@ function showLogin(){
   <div class="err" id="err"></div>
   <button class="btn pri" id="go">Accedi</button>
   <button class="link" id="fg">Password dimenticata?</button>
-  <button class="link" id="rg" style="color:var(--testo)">Non hai un account? <b style="color:var(--accento)">Registrati</b></button></div></div>`;
+  <button class="link" id="rg" style="color:var(--testo)">Non hai un account? <b style="color:var(--accento)">Registrati</b></button>
+  <a class="link" href="privacy.html" target="_blank" rel="noopener" style="font-size:12px;color:var(--testo-secondario)">Informativa privacy</a></div></div>`;
   $('#rg').onclick=showReg;
   $('#fg').onclick=showForgot;
   const go=()=>busy($('#go'),async()=>{setErr('');
@@ -177,7 +178,7 @@ function showReg(){
   <label>Password</label><input id="pw" type="password" autocomplete="new-password">
   <ul class="rules" id="ru">${rulesHtml(passRules(''))}</ul>
   <label>Ripeti la password</label><input id="pw2" type="password" autocomplete="new-password">
-  <label style="display:flex;gap:8px;align-items:flex-start;font-weight:400;color:var(--testo)"><input id="pv" type="checkbox" style="width:auto;margin-top:3px"> Ho letto l'informativa privacy e acconsento al trattamento dei dati.</label>
+  <label style="display:flex;gap:8px;align-items:flex-start;font-weight:400;color:var(--testo)"><input id="pv" type="checkbox" style="width:auto;margin-top:3px"> Ho letto l'<a href="privacy.html" target="_blank" rel="noopener" style="color:var(--accento)">informativa privacy</a> e acconsento al trattamento dei dati.</label>
   <div class="err" id="err"></div>
   <button class="btn pri" id="go">Registrati</button>
   <button class="link" id="bk">Torna all'accesso</button></div></div>`;
@@ -274,11 +275,13 @@ function shell(inner){
   const ini=(user.email||'?').slice(0,2).toUpperCase();
   V().innerHTML=`<div class="top"><div class="brand" id="hm"><i>${MARK}</i>Filo</div>
   <input class="search" id="q" placeholder="Cerca lavagne e progetti…" value="${esc(ST.q)}"><div class="sp"></div><div class="avatar" id="av">${esc(ini)}</div></div>
-  <div class="menu" id="menu" style="display:none"><div style="color:var(--testo-secondario);cursor:default">${esc(user.email)}</div><div id="m-sic">Sicurezza account</div><div id="m-exp">Esporta dati (JSON)</div><div id="m-imp">Importa dati (JSON)</div><div id="m-out">Esci</div><div class="ver">Filo v${CONFIG.versione}</div></div>
+  <div class="menu" id="menu" style="display:none"><div style="color:var(--testo-secondario);cursor:default">${esc(user.email)}</div><div id="m-sic">Sicurezza account</div><div id="m-exp">Esporta dati (JSON)</div><div id="m-imp">Importa dati (JSON)</div><div id="m-priv">Informativa privacy</div><div id="m-del" style="color:var(--err)">Elimina account</div><div id="m-out">Esci</div><div class="ver">Filo v${CONFIG.versione}</div></div>
   <div class="wrap">${inner}</div><input type="file" id="file" accept="application/json,.json" style="display:none">`;
   $('#hm').onclick=()=>{ST.proj=null;showHome()};
   $('#av').onclick=()=>{const m=$('#menu');m.style.display=m.style.display==='none'?'block':'none'};
   $('#m-out').onclick=()=>sb.auth.signOut();
+  $('#m-priv').onclick=()=>{window.open('privacy.html','_blank','noopener');$('#menu').style.display='none';};
+  $('#m-del').onclick=eliminaAccount;
   $('#m-sic').onclick=showSicurezza;
   $('#m-exp').onclick=exportJson;
   $('#m-imp').onclick=()=>$('#file').click();
@@ -456,6 +459,30 @@ async function showSicurezza(){
       if(e)return setErr(msgErr(e));
       m.close();toast('Dispositivo aggiunto');showSicurezza()});
   };
+}
+
+/* ===== eliminazione dell'account ===== */
+function eliminaAccount(){
+  $('#menu').style.display='none';
+  const mine=ST.d?ST.d.lav.filter(l=>l.owner_id===user.id).length:0,sh=ST.d?Object.keys(ST.d.nsh||{}).length:0;
+  const m=modal(`<h2 style="text-align:left;margin-top:0;color:var(--err)">Elimina account</h2>
+   <p class="small" style="text-align:left">Verranno eliminati <b>per sempre</b> i tuoi progetti, le tue lavagne${mine?' ('+mine+')':''}, le immagini e le condivisioni. L'operazione non si può annullare.</p>
+   ${sh?`<div class="note" style="background:#fee2e2;color:#7f1d1d">Hai ${sh} ${sh===1?'lavagna condivisa':'lavagne condivise'} con altre persone: perderanno l'accesso e il contenuto.</div>`:''}
+   <p class="small" style="text-align:left;margin-top:10px">Se vuoi una copia dei tuoi dati, esportala prima di procedere.</p>
+   <button class="btn" id="dx">Esporta dati (JSON)</button>
+   <label>Per confermare scrivi la tua email: <b>${esc(user.email)}</b></label><input id="dc" autocomplete="off">
+   <div class="err" id="err"></div>
+   <div class="row"><button class="btn" data-close>Annulla</button><button class="btn" id="ok" style="background:var(--err);border-color:var(--err);color:#fff">Elimina definitivamente</button></div>`);
+  $('#dx').onclick=exportJson;
+  $('#ok').onclick=()=>busy($('#ok'),async()=>{
+    setErr('');
+    if($('#dc').value.trim().toLowerCase()!==String(user.email||'').toLowerCase())return setErr('L\'email non coincide.');
+    const{data,error}=await sb.rpc('elimina_account');
+    if(error)return setErr(msgErr(error));
+    m.close();
+    await sb.auth.signOut({scope:'local'});
+    toast(data?'Account eliminato. Grazie di aver usato Filo.':'I dati di Filo sono stati eliminati. Il tuo accesso resta valido per gli altri servizi.');
+  });
 }
 
 /* ===== esporta / importa ===== */
