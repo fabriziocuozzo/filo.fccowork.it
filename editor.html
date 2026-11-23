@@ -1133,7 +1133,7 @@ async function exportAll(){
    files.push({name:L.num+'.png',data:new Uint8Array(await bl.arrayBuffer())});
    idx.push(L.num+'\t'+name+(L.kids.length?'  →  contiene '+L.kids.map(k=>k.num).join(', '):''));
   }
-  files.push({name:'indice.txt',data:enc.encode(idx.join('\r\n'))});
+  files.push({name:'indice.txt',data:enc.encode('﻿'+idx.join('\r\n'))});
   download(makeZip(files),fname()+'.zip');toast('ZIP esportato: '+levels.length+' lavagne.');
  }catch(e){toast('Esportazione non riuscita: '+((e&&e.message)||e));}
  finally{EXP_REFS=null;EXP_ALL=null;}
