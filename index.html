@@ -290,16 +290,17 @@ async function showHome(){
   const{error:ei}=await sb.schema('public').from('iscrizioni').upsert({app:CONFIG.app},{onConflict:'user_id,app',ignoreDuplicates:true});
   if(ei){$('.wrap').innerHTML=`<p class="empty">Impossibile attivare l'accesso a Filo: ${esc(msgErr(ei))}</p>`;return}
   const[m,l,p]=await Promise.all([
-    sb.from('membri').select('lavagna_id,ruolo').eq('user_id',user.id),
+    sb.from('membri').select('lavagna_id,user_id,ruolo'),   // le mie righe + quelle delle persone con cui ho condiviso io
     sb.from('lavagne').select('*').order('modificata_il',{ascending:false}),
     sb.from('progetti').select('*').order('creata_il')]);
   const er=m.error||l.error||p.error;
   if(er){$('.wrap').innerHTML=`<p class="empty">Errore nel caricamento: ${esc(msgErr(er))}<br>Controlla che lo schema «filo» sia tra gli Exposed schemas di Supabase.</p>`;return}
-  const ruoli={};(m.data||[]).forEach(x=>ruoli[x.lavagna_id]=x.ruolo);
+  const ruoli={},nsh={};  // nsh: per ogni mia lavagna, con quante persone registrate è condivisa
+  (m.data||[]).forEach(x=>{if(x.user_id===user.id)ruoli[x.lavagna_id]=x.ruolo;else nsh[x.lavagna_id]=(nsh[x.lavagna_id]||0)+1;});
   // le lavagne pubbliche di altri sono leggibili ma non vanno mostrate qui
   const lav=(l.data||[]).filter(x=>x.owner_id===user.id||ruoli[x.id]);
   const{data:fa}=await sb.auth.mfa.listFactors();
-  ST.d={lav,prog:p.data||[],ruoli,unDisp:((fa&&fa.totp)||[]).length<2};
+  ST.d={lav,prog:p.data||[],ruoli,nsh,unDisp:((fa&&fa.totp)||[]).length<2};
   renderHome();
 }
 const ago=d=>{const s=(Date.now()-new Date(d))/1000;
@@ -310,7 +311,7 @@ function lavCard(x){
   return `<div class="item" data-open="${x.id}"><div class="thumb">${THUMB}</div>
    ${mine?`<div class="acts"><button class="share" data-share="${x.id}">Condividi</button><button class="share" data-lren="${x.id}">Rinomina</button><button class="share" data-ldel="${x.id}" style="color:var(--err)">Elimina</button></div>`:''}
    <div class="meta"><b>${esc(x.titolo)}</b><small>Modificata ${ago(x.modificata_il)}</small>
-   ${!mine&&r?`<br><span class="badge ${r==='editor'?'':'r'}">${r==='editor'?'può modificare':'può leggere'}</span>`:''}${mine&&x.link_pubblico?`<br><span class="badge r">link pubblico</span>`:''}</div></div>`;
+   ${!mine&&r?`<br><span class="badge ${r==='editor'?'':'r'}">${r==='editor'?'può modificare':'può leggere'}</span>`:''}${mine&&ST.d.nsh[x.id]?`<br><span class="badge">condivisa con ${ST.d.nsh[x.id]} ${ST.d.nsh[x.id]===1?'persona':'persone'}</span>`:''}${mine&&x.link_pubblico?`<br><span class="badge r">link pubblico</span>`:''}</div></div>`;
 }
 function renderHome(){
   const d=ST.d;if(!d)return;
@@ -323,9 +324,10 @@ function renderHome(){
     h+=`<span class="back" id="bk">← Tutti i progetti</span><h3 style="margin-top:6px">📁 ${esc(pr?pr.nome:'Progetto')}</h3>
      <div class="grid">${ls.map(lavCard).join('')}</div>${ls.length?'':'<p class="empty">Nessuna lavagna in questo progetto.</p>'}`;
   }else{
-    const rec=f(d.lav).slice(0,6),pr=f(d.prog),cond=f(d.lav.filter(x=>x.owner_id!==user.id));
+    const rec=f(d.lav).slice(0,6),pr=f(d.prog),cond=f(d.lav.filter(x=>x.owner_id!==user.id)),dasme=f(d.lav.filter(x=>x.owner_id===user.id&&d.nsh[x.id]));
     h+=`<h3>Recenti</h3>${rec.length?`<div class="grid">${rec.map(lavCard).join('')}</div>`:'<p class="empty">Nessuna lavagna. Crea la prima con «Nuova lavagna».</p>'}
      <h3>Progetti</h3>${pr.length?`<div class="grid">${pr.map(x=>`<div class="item folder" data-proj="${x.id}"><div class="acts"><button class="share" data-pren="${x.id}">Rinomina</button><button class="share" data-pdel="${x.id}" style="color:var(--err)">Elimina</button></div><div class="thumb">📁</div><div class="meta"><b>${esc(x.nome)}</b><small>${d.lav.filter(l=>l.progetto_id===x.id).length} lavagne</small></div></div>`).join('')}</div>`:'<p class="empty">Nessun progetto.</p>'}
+     <h3>Condivise da me</h3>${dasme.length?`<div class="grid">${dasme.map(lavCard).join('')}</div>`:'<p class="empty">Non hai condiviso nessuna lavagna con altri utenti.</p>'}
      <h3>Condivise con me</h3>${cond.length?`<div class="grid">${cond.map(lavCard).join('')}</div>`:'<p class="empty">Nessuna lavagna condivisa con te.</p>'}`;
   }
   $('.wrap').innerHTML=h;
@@ -347,7 +349,8 @@ async function renLav(id){
 }
 async function delLav(id){
   const x=ST.d.lav.find(l=>l.id===id);
-  if(!confirm('Eliminare la lavagna «'+x.titolo+'»?\nVerranno cancellati anche tutti i suoi elementi e le condivisioni. L\'operazione non si può annullare.'))return;
+  const n=ST.d.nsh[id]||0;
+  if(!confirm('Eliminare la lavagna «'+x.titolo+'»?\n'+(n?'ATTENZIONE: è condivisa con '+n+(n===1?' persona':' persone')+', che perderà l\'accesso e il contenuto.\n':'')+'Verranno cancellati anche tutti i suoi elementi e le condivisioni. L\'operazione non si può annullare.'))return;
   const{data,error}=await sb.from('lavagne').delete().eq('id',id).select('id');
   if(error||!data.length)return toast(error?msgErr(error):'Non hai il permesso di eliminarla.',1);
   toast('Lavagna eliminata');showHome();
@@ -400,6 +403,9 @@ async function condividi(id){
    <div id="lkw" style="display:${lav.link_pubblico?'block':'none'}"><input id="lk" readonly value="${esc(location.origin+location.pathname.replace(/[^/]*$/,'')+'vista.html?l='+id)}" style="margin-top:8px"><button class="btn" id="cp" style="margin-top:8px">Copia link</button><p class="small" style="text-align:left">Chi ha il link vede la lavagna in sola lettura, senza registrarsi. Disattivando l'opzione il link smette di funzionare.</p></div>
    <button class="btn" data-close>Chiudi</button>`);
   $('#cp').onclick=async()=>{try{await navigator.clipboard.writeText($('#lk').value);toast('Link copiato')}catch(e){$('#lk').select();toast('Seleziona e copia il link (Ctrl+C)')}};
+  let changed=false;  // alla chiusura aggiorno la home, così le etichette "condivisa con…" sono sempre giuste
+  const mo=new MutationObserver(()=>{if(!document.body.contains(m.el)){mo.disconnect();if(changed)showHome();}});
+  mo.observe(document.body,{childList:true});
   const lista=async()=>{
     const{data,error}=await sb.rpc('membri_lavagna',{p_lavagna:id});
     if(error){$('#lst').innerHTML=`<p class="empty">${esc(msgErr(error))}</p>`;return}
@@ -409,19 +415,19 @@ async function condividi(id){
       <button class="mini" data-rm="${x.user_id}">✕</button></div>`).join(''):'');
     m.el.querySelectorAll('[data-u]').forEach(s=>s.onchange=async()=>{
       const{error}=await sb.from('membri').update({ruolo:s.value}).eq('lavagna_id',id).eq('user_id',s.dataset.u);
-      error?toast(msgErr(error),1):toast('Permesso aggiornato')});
+      error?toast(msgErr(error),1):(changed=true,toast('Permesso aggiornato'))});
     m.el.querySelectorAll('[data-rm]').forEach(b=>b.onclick=async()=>{
       const{error}=await sb.from('membri').delete().eq('lavagna_id',id).eq('user_id',b.dataset.rm);
-      error?toast(msgErr(error),1):lista()});
+      error?toast(msgErr(error),1):(changed=true,lista())});
   };
   lista();
   $('#inv').onclick=()=>busy($('#inv'),async()=>{setErr('');
     const{error}=await sb.rpc('condividi',{p_lavagna:id,p_email:$('#em').value.trim(),p_ruolo:$('#ru').value});
     if(error)return setErr(msgErr(error));
-    $('#em').value='';lista()});
+    $('#em').value='';changed=true;lista()});
   $('#pub').onchange=async()=>{
     const{error}=await sb.from('lavagne').update({link_pubblico:$('#pub').checked}).eq('id',id);
-    if(error){toast(msgErr(error),1);$('#pub').checked=!$('#pub').checked}else{lav.link_pubblico=$('#pub').checked;$('#lkw').style.display=lav.link_pubblico?'block':'none';toast('Impostazione salvata')}};
+    if(error){toast(msgErr(error),1);$('#pub').checked=!$('#pub').checked}else{changed=true;lav.link_pubblico=$('#pub').checked;$('#lkw').style.display=lav.link_pubblico?'block':'none';toast('Impostazione salvata')}};
 }
 
 /* ===== sicurezza account ===== */
