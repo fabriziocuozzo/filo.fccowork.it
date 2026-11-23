@@ -129,13 +129,13 @@ Dopo il login si arriva sulla home dell'app, non sull'editor.
 - [x] Schema Postgres dell'app creato
 - [x] RLS attiva su tutte le tabelle e testata con un secondo utente
 - [x] Iscrizione all'app alla registrazione
-- [ ] Regole password impostate in Supabase (min. 8, maiuscole, minuscole, cifre, simboli)
-- [ ] Conferma email e "password dimenticata" funzionanti
+- [x] Regole password impostate in Supabase (min. 8, maiuscole, minuscole, cifre, simboli)
+- [x] Conferma email e "password dimenticata" funzionanti
 - [x] Verifica in due passaggi obbligatoria, con almeno 1 dispositivo (QR code) e riserva consigliata
 - [x] RLS con controllo `aal2` su tutte le tabelle con dati
 - [x] Prova: un utente con la sola password non legge né scrive nulla
 - [x] Home interna con Recenti / Creati da me / Condivisi con me
 - [x] Condivisione con permessi lettura/modifica
-- [ ] Tema, palette e componenti come da sezione 5
+- [x] Tema, palette e componenti come da sezione 5
 - [x] Verifica da telefono
-- [ ] App aggiunta al catalogo della vetrina
+- [x] App aggiunta al catalogo della vetrina
