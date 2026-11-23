@@ -1,0 +1,14 @@
+Modelli delle email di Supabase (Authentication → Emails → Templates)
+
+Confirm signup
+  Oggetto:  Conferma il tuo account Filo
+  Corpo:    incolla il contenuto di conferma-registrazione.html
+
+Reset password
+  Oggetto:  Scegli una nuova password per Filo
+  Corpo:    incolla il contenuto di recupero-password.html
+
+Gli altri modelli (Invite, Magic link, Change email, Reauthentication) non sono usati da Filo.
+
+Nota: i modelli valgono per tutto il progetto Supabase, quindi per tutte le app.
+Quando si aggiunge una seconda app vanno resi neutri o differenziati.

@@ -50,6 +50,7 @@ Istruzioni da applicare a ogni nuova app. Se una regola va cambiata, si modifica
 - Conferma dell'indirizzo email obbligatoria alla registrazione.
 - Funzione "Password dimenticata" con link via email e pagina per scegliere la nuova password (l'indirizzo va nei Redirect URLs di Supabase).
 - Alla prima registrazione in un'app, l'utente viene aggiunto a `iscrizioni` per quell'app.
+- Le email di sistema (conferma registrazione, recupero password) partono da `noreply@fccowork.it` tramite SMTP personalizzato (Resend, dominio verificato su Aruba). I modelli si impostano in Authentication → Emails → Templates e sono **unici per tutto il progetto Supabase**: con più app vanno resi neutri o differenziati. I modelli di Filo sono nella cartella `email/`.
 
 ### 3.2 Verifica in due passaggi (obbligatoria)
 - Tipo: app di autenticazione (TOTP), con **QR code** da inquadrare con Google Authenticator, Microsoft Authenticator o simili.
