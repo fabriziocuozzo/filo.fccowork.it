@@ -145,7 +145,7 @@ body.ro #bChrono{display:none!important}
 body.ro #bSave{display:none!important}
 #credits{position:fixed;left:0;right:0;bottom:0;z-index:15;text-align:center;font-size:11.5px;color:#64748b;background:rgba(255,255,255,.92);border-top:1px solid var(--bd);padding:5px 8px;line-height:1.4}
 #credits a{color:#1a6fd6;text-decoration:none}
-#mini{bottom:44px}#runbar{bottom:44px}
+#mini{bottom:44px}#runbar{bottom:44px}#qbar{display:none!important}
 @media (max-width:760px){#mini{bottom:auto}#runbar{bottom:44px}}
 body.ro #tools,
 body.ro #props,body.ro #pToggle,body.ro #bUndo,body.ro #bRedo,body.ro #bTpl,body.ro #bGen,body.ro #bOpen,body.ro #bSnap{display:none!important}
@@ -166,6 +166,17 @@ body.ro #stage{grid-column:1}
 #runbar .big{font-size:20px;font-weight:700;margin:2px 0 4px;line-height:1.25}
 #runbar .tim{font-variant-numeric:tabular-nums;font-size:34px;font-weight:800;color:var(--acc2)}
 #runbar .x{margin-left:auto;border:0;background:none;cursor:pointer;font-size:18px;color:var(--mut)}
+#qbar{position:absolute;left:50%;transform:translateX(-50%);bottom:14px;z-index:6;display:none;flex-direction:column;gap:8px;background:#fff;border:1px solid var(--bd);border-radius:14px;box-shadow:0 8px 28px rgba(15,23,42,.16);padding:9px 12px;max-width:calc(100% - 232px);overflow-x:auto}
+#qbar .qr1{display:flex;align-items:center;gap:10px}
+#qbar .shp{display:flex;gap:4px}
+#qbar .shp button{width:40px;height:30px;flex:none}
+#qbar .row{flex-wrap:nowrap}
+#qbar .qr3{display:flex;gap:6px;align-items:center}
+#qbar .qr3 .fld{min-width:240px}
+#qbar .qsp{width:1px;align-self:stretch;background:var(--bd)}
+.hk{display:grid;grid-template-columns:auto 1fr;gap:9px 16px;align-items:center;margin-top:12px;font-size:13.5px}
+.hk b{font-weight:600}
+@media (max-width:760px){#qbar{left:12px;transform:none;bottom:10px;max-width:calc(100% - 84px)}}
 .fsheet{position:fixed;inset:0;background:rgba(15,23,42,.38);display:flex;align-items:flex-start;justify-content:center;padding:4vh 12px;z-index:120;overflow:auto}
 .fcard{background:#fff;border-radius:16px;width:min(900px,100%);padding:18px 20px 20px;box-shadow:0 24px 60px rgba(15,23,42,.3)}
 .fcard h3{margin:0 0 4px;font-size:17px}
@@ -214,6 +225,7 @@ body.ro #stage{grid-column:1}
       <button class="btn ib" id="bSim" title="Simula il flusso"></button>
       <button class="btn ib" id="bTime" title="Tempi: durate, percorso critico, carico per ruolo, scenari"></button>
       <button class="btn ib" id="bChrono" title="Cronometro sul campo"></button>
+      <button class="btn ib" id="bHelp" title="Scorciatoie e aiuto" style="font-weight:800;font-size:16px">?</button>
     </div>
     <div class="sp"></div>
     <button class="btn" id="bTpl"></button>
@@ -232,6 +244,7 @@ body.ro #stage{grid-column:1}
     <div id="crumb"></div>
     <div id="mini"><svg id="minisvg" xmlns="http://www.w3.org/2000/svg"></svg></div>
     <div id="runbar"></div>
+    <div id="qbar"></div>
     <input type="file" id="imgfile" accept="image/*" multiple style="display:none">
     <textarea id="ed" spellcheck="false"></textarea>
   </div>
@@ -1398,12 +1411,13 @@ function heatSVG(){
 }
 
 /* ---------- finestre (tempi, misure) ---------- */
-function sheet(html){
+function sheet(html,w){
  closeSheet();
  const bg=document.createElement('div');bg.id='fsheet';bg.className='fsheet';
  bg.innerHTML='<div class="fcard">'+html+'</div>';
  bg.addEventListener('pointerdown',e=>{if(e.target===bg)closeSheet();});
  document.body.appendChild(bg);
+ if(w)bg.firstChild.style.width=w;
  return bg.firstChild;
 }
 function closeSheet(){const o=$('#fsheet');if(o)o.remove();}
@@ -1550,7 +1564,7 @@ function simStop(){
  if(!SIM)return;
  cancelAnimationFrame(SIM.raf);const base=SIM.base;SIM=null;
  if(S.stack.length>base)exitTo(base);
- $('#runbar').style.display='none';render();
+ $('#runbar').style.display='none';updateQbar();render();
 }
 function simTogglePause(){
  if(!SIM||SIM.phase==='done'||SIM.phase==='wait')return;
@@ -1564,6 +1578,7 @@ function simStep(){
  if(SIM){render();simBar();}
 }
 function simBar(){
+ updateQbar();
  const b=$('#runbar');if(!SIM){b.style.display='none';return;}
  let h=`<div class="rt"><b>Simulazione</b><span>passo ${SIM.steps}</span><span>tempo simulato ${esc(fmtMin(SIM.clock))}</span>${SIM.stack.length?`<span>livello ${SIM.stack.length+1}</span>`:''}<button class="x" data-r="stop" title="Chiudi (Esc)">✕</button></div><div class="rr">`;
  if(SIM.phase==='wait'){
@@ -1645,6 +1660,7 @@ function chTick(){
  if(el&&CH&&!CH.wait)el.textContent=fmtClock(CH.acc+(CH.run?Date.now()-CH.t:0));
 }
 function chBar(){
+ updateQbar();
  const b=$('#runbar');if(!CH){b.style.display='none';return;}
  const n=getItem(CH.cur);
  let h=`<div class="rt"><b>Cronometro sul campo</b><span>passo ${CH.righe.length+1}</span>${CH.stack.length?`<span>livello ${CH.stack.length+1}</span>`:''}<button class="x" data-c="cancel" title="Annulla la rilevazione (Esc)">✕</button></div>`;
@@ -1692,11 +1708,11 @@ function chCancel(){
  if(CH.righe.length&&!confirm('Annullare la rilevazione? I tempi già misurati andranno persi.'))return;
  clearInterval(CHT);const base=CH.base;CH=null;
  if(S.stack.length>base)exitTo(base);
- $('#runbar').style.display='none';
+ $('#runbar').style.display='none';updateQbar();
 }
 function chEnd(){
  clearInterval(CHT);const c=CH;CH=null;
- $('#runbar').style.display='none';
+ $('#runbar').style.display='none';updateQbar();
  if(S.stack.length>c.base)exitTo(c.base);
  const q=misureLoad();q.push({id:c.id,quando:new Date(c.t0).toISOString(),righe:c.righe,sent:false});misureSave(q);
  misureSync();
@@ -1747,6 +1763,55 @@ async function misureSheet(){
  card.innerHTML=h+'</table>';
  card.querySelector('[data-t="csvall"]').onclick=()=>csvOut(all,'misure-'+fname()+'.csv');
 }
+
+/* ---------- barra rapida in basso: forme, colori e link del box selezionato ---------- */
+let QLINK=false;
+const LINK_ICON=`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${ICONS.link[1]}</svg>`;
+function updateQbar(){
+ const b=$('#qbar');if(!b)return;
+ const nodes=[...SEL].map(getItem).filter(i=>i&&i.type==='node');
+ if(RO||!nodes.length||SIM||CH||editing){b.style.display='none';return;}
+ const n=nodes[0],regular=nodes.every(x=>SHAPES[x.shape]||x.shape==='sticky'),single=nodes.length===1&&!isFrame(n);
+ let h='<div class="qr1">';
+ if(regular)h+=`<div class="shp">${Object.keys(SHAPES).map(s=>shapeBtn(s,n.shape===s,'shape')).join('')}</div>`;
+ if(regular&&single)h+='<span class="qsp"></span>';
+ if(single)h+=`<button class="btn ib${safeUrl(n.url)?' on':''}" data-act="qlink" title="Link sul box (sito, mail, un'altra lavagna)">${LINK_ICON}</button>`;
+ h+='</div><div class="qr2">'+swatches(n.color,'ccolor')+'</div>';
+ if(QLINK&&single)h+=`<div class="qr3"><input class="fld" data-act="url" value="${esc(n.url||'')}" placeholder="https://… oppure mailto:…"><button class="btn" data-act="urlopen">Apri</button></div>${n.url&&!safeUrl(n.url)?'<div class="hint2" style="color:#dc2626">Indirizzo non valido: usa http, https, mailto o tel.</div>':''}`;
+ b.innerHTML=h;b.style.display='flex';
+}
+$('#qbar').addEventListener('click',e=>{
+ const b=e.target.closest('[data-act]');if(!b||b.tagName==='INPUT')return;
+ if(b.dataset.act==='qlink'){QLINK=!QLINK;updateQbar();if(QLINK){const i=$('#qbar input[data-act="url"]');if(i)i.focus();}return;}
+ act(b.dataset.act,b.dataset.val);
+ if(b.dataset.act==='urlopen')return;
+ commit();updateProps();
+});
+$('#qbar').addEventListener('input',e=>{const t=e.target,a=t.dataset.act;if(a&&t.tagName==='INPUT')act(a,t.value);});
+$('#qbar').addEventListener('change',e=>{const t=e.target,a=t.dataset.act;if(a&&t.tagName==='INPUT'){act(a,t.value);commit();updateProps();}});
+$('#qbar').addEventListener('keydown',e=>e.stopPropagation());
+
+/* ---------- aiuto: scorciatoie ---------- */
+function helpSheet(){
+ const k=(...a)=>a.map(x=>'<kbd>'+x+'</kbd>').join(' + ');
+ const rows=[
+  [k('Doppio clic'),'modifica il testo di un box (o apre la sua sotto-lavagna)'],
+  [k('Tab'),'aggiungi un figlio collegato'],
+  ['Pallini blu','trascinali da un box all\'altro per collegarli'],
+  [k('Spazio')+' + trascina','sposta la vista · rotellina = zoom'],
+  [k('Ctrl','C')+' / '+k('V')+' / '+k('D'),'copia, incolla, duplica (si incollano anche le immagini)'],
+  [k('Ctrl','Z')+' / '+k('Y'),'annulla / ripeti'],
+  [k('Canc'),'elimina'],
+  [k('Maiusc')+' + clic','selezione multipla'],
+  [k('Ctrl','A'),'seleziona tutto'],
+  [k('Ctrl','G'),'raggruppa (con Maiusc separa)'],
+  [k('Ctrl','1')+' / '+k('Ctrl','0'),'adatta alla vista / zoom 100%'],
+  [k('Alt','←'),'torna alla lavagna precedente (dalle sotto-lavagne)'],
+  [k('Esc'),'ferma la simulazione o il cronometro']
+ ];
+ sheet(`<div style="display:flex;align-items:center;gap:8px"><h3 style="flex:1">Scorciatoie</h3><button class="btn" data-t="close">Chiudi</button></div><div class="hk">${rows.map(r=>'<div>'+r[0]+'</div><div>'+r[1]+'</div>').join('')}</div><p class="hint2" style="margin-top:14px">Seleziona un box: in basso compare la barra con forme, colori e link.</p>`,'min(560px,100%)');
+}
+$('#bHelp').addEventListener('click',helpSheet);
 
 /* ---------- barra della simulazione e del cronometro ---------- */
 $('#runbar').addEventListener('click',e=>{
@@ -2338,9 +2403,8 @@ function nodePanel(nodes){
  const special=nodes.some(x=>x.shape==='icon'||x.shape==='text'||x.shape==='image');
  const regular=nodes.every(x=>SHAPES[x.shape]||x.shape==='sticky');
  let h='';
- if(regular)h+=`<div class="sec"><div class="lab">FORMA</div><div class="shp">${Object.keys(SHAPES).map(s=>shapeBtn(s,n.shape===s,'shape')).join('')}</div></div>`;
+ // forme, colori e link sono nella barra rapida in basso (updateQbar)
  if(!special)h+=`<div class="sec"><div class="lab">STILE</div>${styleTiles(n.style,n.color,'style')}</div>`;
- h+=`<div class="sec"><div class="lab">${n.shape==='text'||n.shape==='icon'?'COLORE':'COLORE BOX'}</div>${swatches(n.color,'ccolor')}</div>`;
  if(n.shape!=='icon'){
   h+=`<div class="sec"><div class="lab">TESTO</div><div class="row" style="margin-bottom:8px"><select data-act="fs" style="width:84px">${[10,12,13,14,16,18,20,24,28,32,40,56].map(v=>`<option ${n.fs==v?'selected':''}>${v}</option>`).join('')}</select><button class="btn ib ${n.bold?'on':''}" data-act="bold" style="font-weight:800;border-color:var(--bd)">B</button><span class="hint2">Colore</span><input type="color" data-act="tcolor" value="${/^#[0-9a-f]{6}$/i.test(n.textColor||'')?n.textColor:'#0f172a'}"><button class="btn" style="height:26px;padding:0 8px;font-size:11px" data-act="tcolor" data-val="auto">Auto</button></div></div>`;
  }
@@ -2352,9 +2416,6 @@ function nodePanel(nodes){
   const roles=[...new Set(allItems().filter(i=>i.type==='node'&&i.role).map(i=>i.role))];
   const same=k=>nodes.every(x=>String(x[k]??'')===String(n[k]??''))?esc(n[k]??''):'';
   h+=`<div class="sec"><div class="lab">TEMPO E RUOLO</div><div class="row"><input class="fld" type="number" min="0" step="any" style="flex:1" data-act="dur" value="${same('dur')}" placeholder="Durata (minuti)"><input class="fld" list="rolelist" style="flex:1" data-act="role" value="${same('role')}" placeholder="Ruolo"></div><datalist id="rolelist">${roles.map(r=>`<option value="${esc(r)}">`).join('')}</datalist><div class="hint2" style="margin-top:6px">Servono per i tempi previsti, il percorso critico e il carico per ruolo (pulsante con l'orologio in alto).</div></div>`;
- }
- if(nodes.length===1&&!isFrame(n)){
-  h+=`<div class="sec"><div class="lab">LINK</div><input class="fld" data-act="url" value="${esc(n.url||'')}" placeholder="https://… (sito, mail, altra lavagna)">${n.url&&!safeUrl(n.url)?'<div class="hint2" style="color:#dc2626;margin-top:4px">Indirizzo non valido: usa http, https, mailto o tel.</div>':''}${safeUrl(n.url)?'<div class="row" style="margin-top:6px"><button class="btn" data-act="urlopen">Apri il link</button></div>':''}</div>`;
  }
  return h;
 }
@@ -2386,8 +2447,7 @@ function defaultsPanel(){
  <div class="sec"><div class="lab">STILE PREDEFINITO DEI BOX</div>${styleTiles(S.defaults.style,S.defaults.color,'dstyle')}</div>
  <div class="sec"><div class="lab">COLORE PREDEFINITO</div>${swatches(S.defaults.color,'dcolor')}</div>
  <div class="sec"><div class="lab">CONNETTORI</div>${seg('dkind',S.defaults.kind,[['elbow','Ad angolo'],['curve','Curva'],['straight','Dritta']])}</div>
- <div class="sec"><div class="lab">SCORCIATOIE</div><div class="hint2">
- <kbd>Doppio clic</kbd> modifica testo<br><kbd>Tab</kbd> aggiungi figlio collegato<br>Trascina dai pallini blu per collegare<br><kbd>Spazio</kbd>+trascina sposta la vista · rotellina = zoom<br><kbd>Ctrl</kbd>+<kbd>C</kbd>/<kbd>V</kbd>/<kbd>D</kbd> copia, incolla, duplica<br><kbd>Ctrl</kbd>+<kbd>Z</kbd>/<kbd>Y</kbd> annulla/ripeti · <kbd>Canc</kbd> elimina<br><kbd>Maiusc</kbd>+clic selezione multipla</div></div>`;
+ <div class="hint2">Seleziona un box per cambiarne forma, colore e link dalla barra in basso. Le scorciatoie sono nel pulsante <b>?</b> in alto.</div>`;
 }
 const AL_ICONS={
  l:'<line x1="4" y1="3" x2="4" y2="21"/><rect x="7" y="6" width="13" height="4"/><rect x="7" y="14" width="8" height="4"/>',
@@ -2413,6 +2473,7 @@ function alignPanel(items,count){
  return h+'</div></div>';
 }
 function updateProps(){
+ updateQbar();
  const items=[...SEL].map(getItem).filter(Boolean);
  const nodes=items.filter(i=>i.type==='node'),edges=items.filter(i=>i.type==='edge'),lines=items.filter(i=>i.type==='line'),pens=items.filter(i=>i.type==='pen');
  let h='';
