@@ -29,6 +29,7 @@ Istruzioni da applicare a ogni nuova app. Se una regola va cambiata, si modifica
 - `filo.lavagne`: `id`, `owner_id`, `progetto_id` (facoltativo: una lavagna può non avere progetto), `titolo`, `link_pubblico` (booleano), `creata_il`, `modificata_il`.
 - `filo.elementi`: `id`, `lavagna_id`, `dati` (JSONB), `versione`, `modificata_il`. Il contenuto della lavagna è **una riga per elemento**, non un unico JSON: così due persone che lavorano insieme su elementi diversi non si sovrascrivono.
 - `filo.membri`: `lavagna_id`, `user_id`, `ruolo` (`lettore` | `editor`).
+- `filo.misure`: `lavagna_id`, `user_id`, `sessione`, `nodo_id`, `inizio`, `fine`, `durata_s`. Tempi rilevati dal cronometro sul campo; le possono registrare e leggere proprietario ed editor. Durate, ruoli, probabilità dei rami e scenari stanno invece nei dati degli elementi (`dur`, `role`, `prob`, e un elemento `scenari`).
 - Il contenuto variabile va in colonne JSONB. Le colonne usate per filtrare e ordinare (titolo, date, proprietario) restano colonne normali.
 
 ### 2.4 Regole RLS (obbligatorie)
@@ -112,7 +113,7 @@ Dopo il login si arriva sulla home dell'app, non sull'editor.
 - Ogni app aperta a utenti esterni ha privacy policy, informativa e consenso al trattamento dei dati (GDPR).
 - Funzione per eliminare l'account e i propri dati.
 - Per l'uso commerciale i testi legali vanno fatti controllare da un professionista.
-- Il piano gratuito di Supabase mette in pausa i progetti dopo 1 settimana di inattività: con utenti reali si passa al piano Pro.
+- Il piano gratuito di Supabase mette in pausa i progetti dopo 1 settimana di inattività: con utenti reali si passa al piano Pro. Nel frattempo un workflow GitHub (`.github/workflows/keepalive.yml`, script `sql/08_keepalive.sql`) chiama ogni giorno `public.keepalive()`.
 
 ## 8. Come si lavora con Claude Code
 

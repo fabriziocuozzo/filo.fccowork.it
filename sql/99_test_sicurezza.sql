@@ -29,6 +29,7 @@ declare
   e1 uuid := gen_random_uuid(); e2 uuid := gen_random_uuid();
   e3 uuid := gen_random_uuid(); e4 uuid := gen_random_uuid();
   n int; n2 int; rc int; ok boolean; r boolean;
+  s1 uuid := gen_random_uuid(); s2 uuid := gen_random_uuid();
   rep text := '';
 begin
   ---------------------------------------------------------------- preparazione (amministratore)
@@ -152,6 +153,53 @@ begin
   execute 'set local role anon';
   select count(*) into n from filo.lavagne;
   rep := rep || case when n = 0 then '✅ ' else '❌ ' end || 'Anonimo: dopo la disattivazione il link non mostra più nulla' || E'\n';
+
+  ---------------------------------------------------------------- 5b) misure del cronometro (si eseguono solo se lo script 09 è stato lanciato)
+  execute 'reset role';
+  if to_regclass('filo.misure') is null then
+    rep := rep || '⚠️ Misure del cronometro: script 09 non ancora eseguito (test saltati)' || E'\n';
+  else
+    insert into filo.misure (lavagna_id, user_id, sessione, nodo_id, inizio, fine, durata_s) values
+      (l4, ub, s1, 'n1', now(), now(), 5),     -- misura di B (editor) su l4
+      (l3, ua, s2, 'n2', now(), now(), 7);     -- misura di A su l3 (dove B è solo lettore)
+    -- C: invitato ma non iscritto
+    execute 'reset role'; perform pg_temp.claims(uc, 'aal2'); execute 'set local role authenticated';
+    select count(*) into n from filo.misure;
+    rep := rep || case when n = 0 then '✅ ' else '❌ ' end || 'Misure: utente non iscritto non le legge' || E'\n';
+    begin insert into filo.misure (lavagna_id, sessione, nodo_id, inizio, fine, durata_s) values (l3, s2, 'x', now(), now(), 1); ok := false; exception when others then ok := true; end;
+    rep := rep || case when ok then '✅ ' else '❌ ' end || 'Misure: utente non iscritto non può registrare' || E'\n';
+    -- B: editor su l4, lettore su l3
+    execute 'reset role'; perform pg_temp.claims(ub, 'aal2'); execute 'set local role authenticated';
+    select count(*) into n from filo.misure where lavagna_id = l4;
+    rep := rep || case when n = 1 then '✅ ' else '❌ ' end || 'Misure: l''editor legge le misure della sua lavagna' || E'\n';
+    select count(*) into n from filo.misure where lavagna_id = l3;
+    rep := rep || case when n = 0 then '✅ ' else '❌ ' end || 'Misure: il lettore non legge le misure' || E'\n';
+    begin insert into filo.misure (lavagna_id, sessione, nodo_id, inizio, fine, durata_s) values (l4, s1, 'n9', now(), now(), 3); ok := true; exception when others then ok := false; end;
+    rep := rep || case when ok then '✅ ' else '❌ ' end || 'Misure: l''editor può registrare' || E'\n';
+    begin insert into filo.misure (lavagna_id, sessione, nodo_id, inizio, fine, durata_s) values (l3, s1, 'n8', now(), now(), 3); ok := false; exception when others then ok := true; end;
+    rep := rep || case when ok then '✅ ' else '❌ ' end || 'Misure: il lettore non può registrare' || E'\n';
+    begin insert into filo.misure (lavagna_id, user_id, sessione, nodo_id, inizio, fine, durata_s) values (l4, ua, s1, 'n7', now(), now(), 3); ok := false; exception when others then ok := true; end;
+    rep := rep || case when ok then '✅ ' else '❌ ' end || 'Misure: non si possono registrare misure a nome di un altro utente' || E'\n';
+    begin update filo.misure set durata_s = 1 where lavagna_id = l4; ok := false; exception when others then ok := true; end;
+    rep := rep || case when ok then '✅ ' else '❌ ' end || 'Misure: le misure non si modificano' || E'\n';
+    -- B con la sola password
+    execute 'reset role'; perform pg_temp.claims(ub, 'aal1'); execute 'set local role authenticated';
+    select count(*) into n from filo.misure;
+    rep := rep || case when n = 0 then '✅ ' else '❌ ' end || 'Misure: con la sola password non si leggono' || E'\n';
+    -- anonimo
+    execute 'reset role';
+    perform set_config('request.jwt.claims', '{"role":"anon"}', true);
+    perform set_config('request.jwt.claim.sub', '', true);
+    execute 'set local role anon';
+    begin perform 1 from filo.misure; ok := false; exception when others then ok := true; end;
+    rep := rep || case when ok then '✅ ' else '❌ ' end || 'Misure: l''anonimo non le legge' || E'\n';
+    -- A proprietario: legge tutto e può cancellare
+    execute 'reset role'; perform pg_temp.claims(ua, 'aal2'); execute 'set local role authenticated';
+    select count(*) into n from filo.misure where lavagna_id in (l3, l4);
+    rep := rep || case when n >= 3 then '✅ ' else '❌ ' end || 'Misure: il proprietario legge quelle delle sue lavagne' || E'\n';
+    begin delete from filo.misure where lavagna_id = l4; get diagnostics rc = row_count; ok := (rc >= 2); exception when others then ok := false; end;
+    rep := rep || case when ok then '✅ ' else '❌ ' end || 'Misure: il proprietario può cancellarle' || E'\n';
+  end if;
 
   ---------------------------------------------------------------- 6) eliminazione account
   execute 'reset role'; perform pg_temp.claims(ua, 'aal1'); execute 'set local role authenticated';

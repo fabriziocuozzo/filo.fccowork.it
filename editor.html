@@ -141,6 +141,7 @@ kbd{background:#f1f5f9;border:1px solid var(--bd);border-radius:4px;padding:0 4p
  .wbox{padding:12px}
  #modal>*,#tmodal>*{max-width:96vw}
 }
+body.ro #bChrono{display:none!important}
 body.ro #tools,body.ro #props,body.ro #pToggle,body.ro #bUndo,body.ro #bRedo,body.ro #bTpl,body.ro #bGen,body.ro #bOpen,body.ro #bSnap{display:none!important}
 body.ro #app{grid-template-columns:1fr}
 body.ro #top{grid-column:1}
@@ -148,6 +149,34 @@ body.ro #stage{grid-column:1}
 #bNew{display:none}
 #crumb{position:absolute;left:12px;top:10px;z-index:6;display:none;max-width:calc(100% - 24px);background:rgba(255,255,255,.96);border:1px solid var(--bd);border-radius:10px;padding:6px 11px;font-size:12.5px;box-shadow:0 2px 8px rgba(15,23,42,.08);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #crumb span{cursor:pointer;color:var(--acc2)}#crumb span:hover{text-decoration:underline}
+#mini{position:absolute;right:12px;bottom:14px;width:190px;height:128px;z-index:6;display:none;background:rgba(255,255,255,.94);border:1px solid var(--bd);border-radius:12px;box-shadow:0 4px 16px rgba(15,23,42,.14);overflow:hidden;cursor:crosshair;touch-action:none}
+#mini svg{width:100%;height:100%;display:block}
+#runbar{position:absolute;left:50%;transform:translateX(-50%);bottom:14px;z-index:7;display:none;background:#fff;border:1px solid var(--bd);border-radius:14px;box-shadow:0 8px 28px rgba(15,23,42,.18);padding:10px 12px;max-width:calc(100% - 232px);min-width:min(520px,calc(100% - 24px))}
+#runbar .rt{font-size:12px;color:var(--mut);margin-bottom:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#runbar .rt b{color:var(--tx);font-size:13px}
+#runbar .rr{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+#runbar .rr .btn{height:32px}
+#runbar select{width:auto;padding:4px 6px}
+#runbar .big{font-size:20px;font-weight:700;margin:2px 0 4px;line-height:1.25}
+#runbar .tim{font-variant-numeric:tabular-nums;font-size:34px;font-weight:800;color:var(--acc2)}
+#runbar .x{margin-left:auto;border:0;background:none;cursor:pointer;font-size:18px;color:var(--mut)}
+.fsheet{position:fixed;inset:0;background:rgba(15,23,42,.38);display:flex;align-items:flex-start;justify-content:center;padding:4vh 12px;z-index:120;overflow:auto}
+.fcard{background:#fff;border-radius:16px;width:min(900px,100%);padding:18px 20px 20px;box-shadow:0 24px 60px rgba(15,23,42,.3)}
+.fcard h3{margin:0 0 4px;font-size:17px}
+.fcard h4{margin:18px 0 8px;font-size:12px;letter-spacing:.05em;color:var(--mut);text-transform:uppercase}
+.fcard .top2{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}
+.fcard .top2 select,.fcard .top2 input{width:auto}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpi{background:#f8fafc;border:1px solid var(--bd);border-radius:12px;padding:10px 12px}
+.kpi small{color:var(--mut);display:block;font-size:11.5px}.kpi b{font-size:20px;display:block}
+.ft{width:100%;border-collapse:collapse;font-size:12.5px}
+.ft th{text-align:left;color:var(--mut);font-weight:700;padding:6px 8px;border-bottom:1px solid var(--bd);white-space:nowrap}
+.ft td{padding:5px 8px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+.ft input{width:84px;padding:4px 6px}
+.rb{height:10px;border-radius:5px;background:var(--soft);overflow:hidden;min-width:120px}.rb i{display:block;height:100%;background:var(--acc)}
+.warn{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:10px;padding:8px 10px;font-size:12.5px;margin-top:8px}
+.heatleg{height:10px;border-radius:5px;background:linear-gradient(90deg,#fde047,#fb923c,#ef4444);width:160px;display:inline-block;vertical-align:middle}
+@media (max-width:760px){#mini{width:130px;height:88px;top:10px;bottom:auto;right:10px}#runbar{max-width:calc(100% - 24px);bottom:10px}.fsheet{padding:2vh 8px}.fcard{padding:14px}}
 @media (max-width:760px){body.ro #app{grid-template-rows:48px 1fr}body.ro #stage{grid-row:2}}
 #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#0f172a;color:#fff;padding:9px 16px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:200}
 #toast.on{opacity:1}
@@ -174,6 +203,12 @@ body.ro #stage{grid-column:1}
       <button class="btn ib" id="bGrid" title="Mostra griglia"></button>
       <button class="btn ib" id="bSnap" title="Aggancia alla griglia"></button>
     </div>
+    <div class="grp">
+      <button class="btn ib" id="bMap" title="Minimappa"></button>
+      <button class="btn ib" id="bSim" title="Simula il flusso"></button>
+      <button class="btn ib" id="bTime" title="Tempi: durate, percorso critico, carico per ruolo, scenari"></button>
+      <button class="btn ib" id="bChrono" title="Cronometro sul campo"></button>
+    </div>
     <div class="sp"></div>
     <button class="btn" id="bTpl"></button>
     <button class="btn pri" id="bGen"></button>
@@ -189,6 +224,8 @@ body.ro #stage{grid-column:1}
     <svg id="svg" xmlns="http://www.w3.org/2000/svg"><defs id="defs"></defs><g id="world"></g></svg>
     <div id="hint"><b>Filo</b>Scegli uno strumento e disegna sul canvas<br>oppure usa <i>Genera da testo</i> per creare un flusso in automatico</div>
     <div id="crumb"></div>
+    <div id="mini"><svg id="minisvg" xmlns="http://www.w3.org/2000/svg"></svg></div>
+    <div id="runbar"></div>
     <input type="file" id="imgfile" accept="image/*" multiple style="display:none">
     <textarea id="ed" spellcheck="false"></textarea>
   </div>
@@ -289,7 +326,11 @@ const UI={
  folder:'<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
  sliders:'<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>',
  board:'<rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21l4-3 4 3"/>',
- layers:'<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>'
+ layers:'<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>',
+ play:'<polygon points="6 3 20 12 6 21 6 3"/>',
+ clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+ map:'<polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/>',
+ timer:'<circle cx="12" cy="13" r="8"/><polyline points="12 9 12 13 14 15"/><line x1="9" y1="2" x2="15" y2="2"/>'
 };
 function uic(n,s){s=s||20;return `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${UI[n]}</svg>`;}
 
@@ -348,7 +389,7 @@ const EDGE_COL='#475569';
 let S={items:[],other:[],stack:[],rootView:null,title:'Senza titolo',view:{x:320,y:140,k:1},defaults:{style:'gshadow',color:'#2b87f0',kind:'elbow'},grid:true,snap:true};
 const SEL=new Set();
 let tool='select',pendingShape='round',hover=null,drag=null,editing=null,spaceDown=false,clipboard=null,lastDown={id:null,t:0};
-let hist=[],hi=-1,raf=0,exporting=false,iconMode='insert',RO=false;
+let hist=[],hi=-1,raf=0,exporting=false,iconMode='insert',RO=false,showMini=true;
 
 const getItem=id=>S.items.find(i=>i.id===id);
 const isFrame=n=>!!n&&(n.shape==='frame'||n.shape==='lane');
@@ -502,6 +543,7 @@ function nodeSVG(n){
   s+=textSVG(n,v);
  }
  if(n.sub&&n.shape!=='icon'&&n.shape!=='text')s+=subBadge(n);
+ if(n.url&&safeUrl(n.url))s+=linkBadge(n);
  return s+'</g>';
 }
 
@@ -771,6 +813,7 @@ function overlaySVG(){
    s+=g.axis==='x'?`<line x1="${g.pos}" y1="${g.a}" x2="${g.pos}" y2="${g.b}" stroke="#f43f5e" stroke-width="${1/k}" pointer-events="none"/>`:`<line x1="${g.a}" y1="${g.pos}" x2="${g.b}" y2="${g.pos}" stroke="#f43f5e" stroke-width="${1/k}" pointer-events="none"/>`;
   });
  }
+ s+=heatSVG()+simSVG();
  return s;
 }
 
@@ -806,6 +849,7 @@ function applyView(){
   stage.style.backgroundPosition=v.x+'px '+v.y+'px';
  }else stage.style.backgroundImage='none';
  $('#zl').textContent=Math.round(v.k*100)+'%';
+ drawMini();
 }
 function toWorld(e){
  const r=svg.getBoundingClientRect();
@@ -827,7 +871,7 @@ function fitView(list){
 
 /* ---------- storia e salvataggio ---------- */
 function snapshot(){return JSON.stringify({items:S.items,title:S.title});}
-function save(){try{localStorage.setItem('filo_prefs',JSON.stringify({defaults:S.defaults,grid:S.grid,snap:S.snap}));}catch(e){}scheduleSync();}
+function save(){try{localStorage.setItem('filo_prefs',JSON.stringify({defaults:S.defaults,grid:S.grid,snap:S.snap,mini:showMini}));}catch(e){}scheduleSync();}
 function commit(){
  const s=snapshot();
  if(hist[hi]===s){save();return;}
@@ -957,6 +1001,7 @@ function imageSVG(n){
  s+=`<rect width="${n.w}" height="${n.h}" rx="${r}" fill="none" stroke="${col}" stroke-width="${sw}"/>`;
  if(n.text)s+=`<text x="${n.w/2}" y="${n.h+fs+4}" text-anchor="middle" font-family="${FONT}" font-size="${fs}" font-weight="${n.bold?600:400}" fill="${n.textColor||'#334155'}" pointer-events="none" style="user-select:none">${esc(truncText(n.text,n.w+40,fs,n.bold))}</text>`;
  if(n.sub)s+=subBadge(n);
+ if(n.url&&safeUrl(n.url))s+=linkBadge(n);
  return s+'</g>';
 }
 function loadImageFile(f){
@@ -1139,6 +1184,581 @@ async function exportAll(){
  finally{EXP_REFS=null;EXP_ALL=null;}
 }
 
+function uuid(){ // identificatore casuale; alternativa per i contesti senza crypto.randomUUID
+ if(crypto.randomUUID)return crypto.randomUUID();
+ const b=crypto.getRandomValues(new Uint8Array(16));b[6]=b[6]&15|64;b[8]=b[8]&63|128;
+ const h=[...b].map(x=>x.toString(16).padStart(2,'0')).join('');
+ return h.slice(0,8)+'-'+h.slice(8,12)+'-'+h.slice(12,16)+'-'+h.slice(16,20)+'-'+h.slice(20);
+}
+
+/* ---------- link sui box ---------- */
+function safeUrl(u){ // solo http, https, mailto e tel: niente javascript: o data:
+ u=String(u||'').trim();if(!u)return null;
+ if(/^(https?:\/\/|mailto:|tel:)/i.test(u))return u;
+ if(/^[a-z][a-z0-9+.\-]*:/i.test(u))return null;
+ if(/^[^\s\/@]+\.[a-z]{2,}([\/?#].*)?$/i.test(u))return 'https://'+u;
+ return null;
+}
+function linkBadge(n){
+ return `<g data-role="link" data-id="${n.id}" transform="translate(4 4)" style="cursor:pointer"><circle r="10" fill="#0ea5e9" stroke="#fff" stroke-width="2"/><g transform="translate(-6 -6) scale(.5)" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">${ICONS.link[1]}</g><title>${esc(safeUrl(n.url)||'')}</title></g>`;
+}
+
+/* ---------- minimappa ---------- */
+let MM=null,MM_LOCK=false;
+function drawMini(){
+ const box=$('#mini');if(!box)return;
+ if(!showMini){box.style.display='none';return;}
+ const b=contentBounds();
+ if(!b){box.style.display='none';return;}
+ box.style.display='block';
+ const mw=box.clientWidth,mh=box.clientHeight;
+ if(!(MM_LOCK&&MM)){
+  const r=svg.getBoundingClientRect(),k=S.view.k;
+  const vw={x:-S.view.x/k,y:-S.view.y/k,w:r.width/k,h:r.height/k};
+  const x1=Math.min(b.x,vw.x),y1=Math.min(b.y,vw.y),x2=Math.max(b.x+b.w,vw.x+vw.w),y2=Math.max(b.y+b.h,vw.y+vw.h);
+  const pad=Math.max(x2-x1,y2-y1)*.03,W=x2-x1+pad*2,H=y2-y1+pad*2,sc=Math.min(mw/W,mh/H);
+  MM={sc,ox:(mw-W*sc)/2,oy:(mh-H*sc)/2,x0:x1-pad,y0:y1-pad};
+ }
+ const X=x=>MM.ox+(x-MM.x0)*MM.sc,Y=y=>MM.oy+(y-MM.y0)*MM.sc;
+ const r2=svg.getBoundingClientRect(),k2=S.view.k;
+ let s='';
+ S.items.forEach(i=>{
+  if(i.type!=='edge')return;
+  const a=getItem(i.from),c=getItem(i.to);if(!a||!c)return;
+  const A=ctr(a),B=ctr(c);
+  s+=`<line x1="${X(A.x)}" y1="${Y(A.y)}" x2="${X(B.x)}" y2="${Y(B.y)}" stroke="#94a3b8" stroke-width="1"/>`;
+ });
+ S.items.forEach(i=>{
+  if(i.type==='edge')return;
+  const bb=bboxOf(i);if(!bb)return;
+  const w=Math.max(2,bb.w*MM.sc),h=Math.max(2,bb.h*MM.sc);
+  if(i.type==='node'){
+   const fr=isFrame(i);
+   s+=`<rect x="${X(bb.x)}" y="${Y(bb.y)}" width="${w}" height="${h}" rx="1.5" fill="${fr?'none':(i.shape==='image'?'#94a3b8':(i.color||'#2563eb'))}" ${fr?'stroke="#94a3b8"':''} opacity="${fr?1:.85}"/>`;
+  }else s+=`<rect x="${X(bb.x)}" y="${Y(bb.y)}" width="${w}" height="${h}" fill="#64748b" opacity=".5"/>`;
+ });
+ s+=`<rect x="${X(-S.view.x/k2)}" y="${Y(-S.view.y/k2)}" width="${r2.width/k2*MM.sc}" height="${r2.height/k2*MM.sc}" fill="rgba(37,99,235,.10)" stroke="#2563eb" stroke-width="1.5"/>`;
+ const ms=$('#minisvg');ms.setAttribute('viewBox',`0 0 ${mw} ${mh}`);ms.innerHTML=s;
+}
+(function(){
+ const box=$('#mini');let down=false;
+ const go=e=>{
+  if(!MM)return;
+  const rc=box.getBoundingClientRect(),wx=((e.clientX-rc.left)-MM.ox)/MM.sc+MM.x0,wy=((e.clientY-rc.top)-MM.oy)/MM.sc+MM.y0,r=svg.getBoundingClientRect();
+  S.view.x=r.width/2-wx*S.view.k;S.view.y=r.height/2-wy*S.view.k;render();
+ };
+ box.addEventListener('pointerdown',e=>{down=true;MM_LOCK=true;try{box.setPointerCapture(e.pointerId);}catch(x){}e.preventDefault();e.stopPropagation();go(e);});
+ box.addEventListener('pointermove',e=>{if(down)go(e);});
+ const up=()=>{down=false;MM_LOCK=false;drawMini();};
+ box.addEventListener('pointerup',up);box.addEventListener('pointercancel',up);
+})();
+
+/* ---------- flusso: grafo, percorso, probabilità ---------- */
+const labelOf=n=>((n&&n.text)||'Senza titolo').split('\n')[0];
+function fmtMin(m){
+ m=+m||0;if(m<=0)return '0 min';
+ if(m<1)return Math.round(m*60)+' s';
+ if(m<60)return (Math.round(m*10)/10).toString().replace('.',',')+' min';
+ const h=Math.floor(m/60),r=Math.round(m-h*60);return h+' h'+(r?' '+r+' min':'');
+}
+function fmtClock(ms){const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60,p=v=>String(v).padStart(2,'0');return (h?h+':':'')+p(m)+':'+p(x);}
+const lvItems=l=>allItems().filter(i=>(i.lv||null)===(l||null));
+function flowOf(items){
+ const byId=new Map();
+ items.forEach(i=>{if(i.type==='node'&&!isFrame(i)&&i.shape!=='text'&&i.shape!=='icon')byId.set(i.id,i);});
+ const edges=items.filter(i=>i.type==='edge'&&byId.has(i.from)&&byId.has(i.to));
+ const out=new Map(),inc=new Map(),used=new Set();
+ edges.forEach(e=>{if(!out.has(e.from))out.set(e.from,[]);out.get(e.from).push(e);used.add(e.from);used.add(e.to);if(e.kind!=='loop')inc.set(e.to,(inc.get(e.to)||0)+1);});
+ return{byId,edges,out,inc,nodes:[...byId.values()].filter(n=>used.has(n.id))};
+}
+function pickStart(fl,prefId){
+ if(prefId&&fl.nodes.some(n=>n.id===prefId))return prefId;
+ const c=fl.nodes.filter(n=>!fl.inc.get(n.id));
+ const named=c.find(n=>/^\s*(inizio|start|avvio)\b/i.test(n.text||''));
+ return ((named||c[0]||fl.nodes[0])||{}).id||null;
+}
+const outEdges=id=>flowOf(S.items).out.get(id)||[];
+function branchW(outs){ // pesi normalizzati dei rami: i vuoti si dividono il resto in parti uguali
+ const p=outs.map(probOf),known=p.filter(x=>x!=null&&!isNaN(x)),sum=known.reduce((a,b)=>a+b,0),u=p.length-known.length;
+ let res=u>0?p.map(x=>(x==null||isNaN(x))?Math.max(0,100-sum)/u:x):p.slice();
+ let t=res.reduce((a,b)=>a+b,0);
+ if(t<=0){res=res.map(()=>1);t=res.length;}
+ return res.map(x=>x/t);
+}
+function pickWeighted(outs){const w=branchW(outs);let r=Math.random(),a=0;for(let i=0;i<outs.length;i++){a+=w[i];if(r<a)return outs[i];}return outs[outs.length-1];}
+
+/* ---------- scenari (valori alternativi di durate e probabilità) ---------- */
+let ACT_SC=null; // scenario attivo, solo locale (null = valori scritti sui box)
+const scenItem=()=>allItems().find(i=>i.type==='scenari');
+const scenList=()=>{const s=scenItem();return s?s.list:[];};
+const actScen=()=>ACT_SC?(scenList().find(x=>x.id===ACT_SC)||null):null;
+function ensureScen(){let s=scenItem();if(!s){s={id:uid(),type:'scenari',list:[]};(curLevel()?S.other:S.items).push(s);}return s;}
+function durOf(n){
+ const sc=actScen();
+ if(sc&&sc.dur&&sc.dur[n.id]!=null&&sc.dur[n.id]!=='')return +sc.dur[n.id]||0;
+ return (+n.dur||0)*((sc&&sc.mul)?sc.mul/100:1);
+}
+function probOf(e){
+ const sc=actScen();
+ if(sc&&sc.prob&&sc.prob[e.id]!=null&&sc.prob[e.id]!=='')return +sc.prob[e.id];
+ return (e.prob!=null&&e.prob!=='')?+e.prob:null;
+}
+
+/* ---------- calcolo dei tempi ---------- */
+function expVisits(fl,start){ // numero atteso di visite a ogni box (gestisce anche i cicli)
+ const ids=fl.nodes.map(n=>n.id),P=new Map();
+ fl.nodes.forEach(n=>{const outs=fl.out.get(n.id)||[];if(outs.length){const w=branchW(outs);P.set(n.id,outs.map((e,i)=>[e.to,w[i]]));}});
+ let N=new Map(ids.map(i=>[i,i===start?1:0])),diff=0;
+ for(let it=0;it<6000;it++){
+  const nx=new Map(ids.map(i=>[i,i===start?1:0]));
+  P.forEach((arr,u)=>{const nu=N.get(u);if(nu)arr.forEach(a=>nx.set(a[0],nx.get(a[0])+nu*a[1]));});
+  diff=0;ids.forEach(i=>{const d=Math.abs(nx.get(i)-N.get(i));if(d>diff)diff=d;});
+  N=nx;if(diff<1e-9)break;
+ }
+ return{N,inf:diff>1e-6};
+}
+function pathExtreme(fl,start,w,mode){
+ if(!start)return{t:0,path:[]};
+ const memo=new Map(),stack=new Set();
+ const go=id=>{
+  if(memo.has(id))return memo.get(id);
+  if(stack.has(id))return null;
+  stack.add(id);
+  const n=fl.byId.get(id),outs=(fl.out.get(id)||[]).filter(e=>e.kind!=='loop');
+  let best=null;
+  outs.forEach(e=>{const r=go(e.to);if(r&&(!best||(mode==='max'?r.t>best.t:r.t<best.t)))best=r;});
+  stack.delete(id);
+  const res=best?{t:w(n)+best.t,path:[id].concat(best.path)}:{t:w(n),path:[id]};
+  memo.set(id,res);return res;
+ };
+ return go(start)||{t:0,path:[]};
+}
+function analyze(lv){
+ const cache=new Map(),key=l=>l||'~';
+ const info=l=>{
+  const k=key(l);
+  if(!cache.has(k)){
+   const fl=flowOf(lvItems(l)),st=fl.nodes.length?pickStart(fl):null,ev=st?expVisits(fl,st):{N:new Map(),inf:false};
+   cache.set(k,{fl,st,N:ev.N,inf:ev.inf,run:null});
+  }
+  return cache.get(k);
+ };
+ let inf=false;
+ const run=(l,d)=>{
+  const I=info(l);if(I.run!==null)return I.run;
+  if(d>15){I.run=0;return 0;}
+  if(I.inf)inf=true;
+  let t=0;I.fl.nodes.forEach(n=>{t+=(I.N.get(n.id)||0)*(durOf(n)+(n.sub?run(n.id,d+1):0));});
+  I.run=t;return t;
+ };
+ const total=run(lv,0);
+ const roles=new Map(),rows=[],missing=[];
+ (function acc(l,mult,path,d){
+  const I=info(l);
+  I.fl.nodes.forEach(n=>{
+   const v=(I.N.get(n.id)||0)*mult,own=durOf(n),r=n.role||'(senza ruolo)';
+   if(own>0)roles.set(r,(roles.get(r)||0)+own*v);
+   if(!(own>0)&&!n.sub)missing.push(labelOf(n));
+   rows.push({n,path:path.join(' › '),visits:v,own,contrib:v*own});
+   if(n.sub&&d<15)acc(n.id,v,path.concat(labelOf(n)),d+1);
+  });
+ })(lv,1,[],0);
+ const I0=info(lv),w=n=>durOf(n)+(n.sub?run(n.id,1):0);
+ return{total,inf,roles,rows,missing,I:I0,w,run,mx:pathExtreme(I0.fl,I0.st,w,'max'),mn:pathExtreme(I0.fl,I0.st,w,'min')};
+}
+
+/* ---------- mappa del calore ---------- */
+let HEAT=false,HEATC=null;
+function heatData(){
+ if(HEATC&&HEATC.h===hist[hi]&&HEATC.sc===ACT_SC&&HEATC.lv===curLevel())return HEATC;
+ const A=analyze(curLevel()),m=new Map();let max=0;
+ A.I.fl.nodes.forEach(n=>{const v=(A.I.N.get(n.id)||0)*A.w(n);m.set(n.id,v);if(v>max)max=v;});
+ HEATC={h:hist[hi],sc:ACT_SC,lv:curLevel(),m,max,total:A.total};return HEATC;
+}
+function heatColor(r){return r<.5?mix('#fde047','#fb923c',r*2):mix('#fb923c','#ef4444',(r-.5)*2);}
+function heatSVG(){
+ if(!HEAT||exporting)return'';
+ const H=heatData();if(!H.max)return'';
+ let s='';
+ S.items.forEach(n=>{
+  if(n.type!=='node'||!H.m.has(n.id))return;
+  const v=H.m.get(n.id),r=v/H.max,col=heatColor(r);
+  s+=`<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="10" fill="${col}" fill-opacity="${(.22+.45*r).toFixed(2)}" stroke="${col}" stroke-width="2" pointer-events="none"/>`;
+  s+=`<g transform="translate(${n.x+n.w/2} ${n.y+n.h+16})" pointer-events="none"><rect x="-30" y="-10" width="60" height="20" rx="10" fill="#fff" stroke="${col}"/><text text-anchor="middle" dominant-baseline="central" font-family="${FONT}" font-size="11" font-weight="700" fill="#334155">${esc(fmtMin(v))}</text></g>`;
+ });
+ return s;
+}
+
+/* ---------- finestre (tempi, misure) ---------- */
+function sheet(html){
+ closeSheet();
+ const bg=document.createElement('div');bg.id='fsheet';bg.className='fsheet';
+ bg.innerHTML='<div class="fcard">'+html+'</div>';
+ bg.addEventListener('pointerdown',e=>{if(e.target===bg)closeSheet();});
+ document.body.appendChild(bg);
+ return bg.firstChild;
+}
+function closeSheet(){const o=$('#fsheet');if(o)o.remove();}
+const levelName=()=>[S.title||'Lavagna'].concat(S.stack.map(r=>labelOf(anyItem(r.id)))).join(' › ');
+
+function timeSheet(){
+ const A=analyze(curLevel()),sc=actScen(),sl=scenList(),dis=RO?' disabled':'';
+ const pub=!!$('#credits');
+ let h=`<div style="display:flex;align-items:center;gap:8px"><h3 style="flex:1">Tempi · ${esc(levelName())}</h3><button class="btn" data-t="close">Chiudi</button></div>`;
+ h+=`<div class="top2"><b style="font-size:13px">Scenario</b><select data-t="scen"><option value="">Base (valori dei box)</option>${sl.map(s=>`<option value="${s.id}"${s.id===ACT_SC?' selected':''}>${esc(s.name)}</option>`).join('')}</select><button class="btn" data-t="scnew"${dis}>+ Nuovo</button>`;
+ if(sc)h+=`<button class="btn" data-t="scren"${dis}>Rinomina</button><button class="btn" data-t="scdel"${dis} style="color:#dc2626">Elimina</button><label style="font-size:12.5px">Durate al <input type="number" min="1" step="5" data-t="scmul" value="${sc.mul||100}" style="width:76px"${dis}> %</label>`;
+ h+=`<span style="flex:1"></span>${pub?'':'<button class="btn" data-t="misure">Misure sul campo</button>'}<button class="btn${HEAT?' pri':''}" data-t="heat">Mappa del calore: ${HEAT?'accesa':'spenta'}</button></div>`;
+ if(!A.I.fl.nodes.length){return sheet(h+'<p class="hint2" style="margin-top:14px">Non c\'è ancora un flusso da analizzare: collega almeno due box con una freccia e scrivi la durata di ogni passo (pannello a destra, «Tempo e ruolo»).</p>');}
+ h+=`<div class="kpis"><div class="kpi"><small>Tempo atteso</small><b>${esc(fmtMin(A.total))}</b></div><div class="kpi"><small>Percorso più breve</small><b>${esc(fmtMin(A.mn.t))}</b></div><div class="kpi"><small>Percorso più lungo (critico)</small><b>${esc(fmtMin(A.mx.t))}</b></div><div class="kpi"><small>Box senza durata</small><b>${A.missing.length}</b></div></div>`;
+ if(A.inf)h+='<div class="warn">Il flusso contiene un ciclo senza uscita: il tempo atteso non si può calcolare. Controlla le probabilità dei rami.</div>';
+ if(A.missing.length)h+=`<div class="warn">Senza durata (valgono 0): ${esc(A.missing.slice(0,8).join(', '))}${A.missing.length>8?'…':''}</div>`;
+ h+=`<h4>Percorso critico (il più lungo)</h4><p style="margin:0;font-size:13.5px">${A.mx.path.map(id=>esc(labelOf(A.I.fl.byId.get(id)))).join(' → ')}</p><p class="hint2" style="margin:4px 0 0">Un box con sotto-lavagna conta anche il tempo atteso della sua sotto-lavagna.</p>`;
+ const rl=[...A.roles.entries()].sort((a,b)=>b[1]-a[1]),rmax=rl.length?rl[0][1]:0;
+ h+='<h4>Carico per ruolo (tempo atteso)</h4>';
+ h+=rl.length?`<table class="ft">${rl.map(r=>`<tr><td style="width:30%">${esc(r[0])}</td><td><div class="rb"><i style="width:${rmax?Math.round(r[1]/rmax*100):0}%"></i></div></td><td style="text-align:right;white-space:nowrap">${esc(fmtMin(r[1]))} · ${A.total?Math.round(r[1]/A.total*100):0}%</td></tr>`).join('')}</table>`:'<p class="hint2">Scrivi durata e ruolo dei box per vedere il carico di ciascuno.</p>';
+ h+=`<h4>Box</h4><table class="ft"><tr><th>Box</th><th>Visite attese</th><th>Durata (min)${sc?' · scenario':''}</th><th>Ruolo</th><th>Contributo</th></tr>${A.rows.map(r=>{
+  const own=sc&&sc.dur&&sc.dur[r.n.id]!=null?sc.dur[r.n.id]:(sc?'':(r.n.dur==null?'':r.n.dur));
+  return `<tr><td>${r.path?'<span style="color:var(--mut)">'+esc(r.path)+' › </span>':''}${esc(labelOf(r.n))}</td><td>${(Math.round(r.visits*100)/100).toString().replace('.',',')}</td><td><input type="number" min="0" step="any" data-t="dur" data-id="${r.n.id}" value="${esc(own)}" placeholder="${sc?esc(((+r.n.dur||0)*(sc.mul||100)/100)||''):''}"${dis}></td><td>${esc(r.n.role||'')}</td><td>${esc(fmtMin(r.contrib))}</td></tr>`;}).join('')}</table>`;
+ const groups=new Map();
+ allItems().filter(e=>e.type==='edge').forEach(e=>{if(!groups.has(e.from))groups.set(e.from,[]);groups.get(e.from).push(e);});
+ const dec=[...groups.entries()].filter(g=>g[1].length>1&&anyItem(g[0]));
+ if(dec.length){
+  h+='<h4>Probabilità dei rami (%)</h4><table class="ft"><tr><th>Scelta</th><th>Ramo</th><th>Probabilità · scenario</th><th>Effettiva</th></tr>';
+  dec.forEach(g=>{
+   const w=branchW(g[1]);
+   g[1].forEach((e,i)=>{
+    const own=sc&&sc.prob&&sc.prob[e.id]!=null?sc.prob[e.id]:(sc?'':(e.prob==null?'':e.prob)),t=anyItem(e.to);
+    h+=`<tr><td>${i?'':esc(labelOf(anyItem(g[0])))}</td><td>${esc(e.label?e.label+' → ':'')}${esc(labelOf(t))}</td><td><input type="number" min="0" max="100" step="any" data-t="prob" data-id="${e.id}" value="${esc(own)}" placeholder="auto"${dis}></td><td>${Math.round(w[i]*100)}%</td></tr>`;
+   });
+  });
+  h+='</table>';
+ }
+ const c=sheet(h);
+ c.scrollIntoView&&c.scrollIntoView({block:'start'});
+}
+document.addEventListener('click',e=>{
+ const c=$('#fsheet');if(!c||!c.contains(e.target))return;
+ const b=e.target.closest('[data-t]');if(!b||b.tagName==='SELECT'||b.tagName==='INPUT')return;
+ const a=b.dataset.t;
+ if(a==='close')closeSheet();
+ else if(a==='heat'){HEAT=!HEAT;HEATC=null;render();timeSheet();}
+ else if(a==='misure')misureSheet();
+ else if(a==='scnew'&&!RO){
+  const s=ensureScen(),name=prompt('Nome del nuovo scenario','Scenario '+(s.list.length+1));
+  if(!name||!name.trim())return;
+  const sc={id:uid(),name:name.trim(),mul:100,dur:{},prob:{}};s.list.push(sc);ACT_SC=sc.id;HEATC=null;commit();render();timeSheet();
+ }else if(a==='scren'&&!RO){
+  const sc=actScen();if(!sc)return;const name=prompt('Nuovo nome',sc.name);
+  if(name&&name.trim()){sc.name=name.trim();commit();timeSheet();}
+ }else if(a==='scdel'&&!RO){
+  const s=scenItem(),sc=actScen();if(!s||!sc||!confirm('Eliminare lo scenario «'+sc.name+'»?'))return;
+  s.list=s.list.filter(x=>x.id!==sc.id);ACT_SC=null;HEATC=null;commit();render();timeSheet();
+ }
+});
+document.addEventListener('change',e=>{
+ const c=$('#fsheet');if(!c||!c.contains(e.target))return;
+ const t=e.target,a=t.dataset.t;if(!a||RO&&a!=='scen')return;
+ const sc=actScen();
+ if(a==='scen'){ACT_SC=t.value||null;HEATC=null;render();timeSheet();}
+ else if(a==='scmul'&&sc){sc.mul=clamp(+t.value||100,1,1000);commit();HEATC=null;render();timeSheet();}
+ else if(a==='dur'){
+  const n=anyItem(t.dataset.id);if(!n)return;
+  const v=t.value===''||isNaN(+t.value)?null:Math.max(0,+t.value);
+  if(sc){if(v==null)delete sc.dur[n.id];else sc.dur[n.id]=v;}else{if(v==null)delete n.dur;else n.dur=v;}
+  commit();HEATC=null;render();timeSheet();
+ }else if(a==='prob'){
+  const ed=anyItem(t.dataset.id);if(!ed)return;
+  const v=t.value===''||isNaN(+t.value)?null:clamp(+t.value,0,100);
+  if(sc){if(v==null)delete sc.prob[ed.id];else sc.prob[ed.id]=v;}else{if(v==null)delete ed.prob;else ed.prob=v;}
+  commit();HEATC=null;render();timeSheet();
+ }
+});
+
+/* ---------- simulazione del flusso ---------- */
+let SIM=null;
+function simStart(){
+ if(CH)return toast('Chiudi prima la rilevazione con il cronometro.');
+ if(SIM)simStop();
+ const fl=flowOf(S.items);
+ if(fl.nodes.length<2){toast('Per simulare servono almeno due box collegati da una freccia.');return;}
+ const pref=[...SEL].find(id=>fl.byId.has(id)),start=pickStart(fl,pref);
+ SIM={base:S.stack.length,stack:[],cur:start,trail:new Set([start]),token:null,phase:'dwell',t0:performance.now(),dwell:450,steps:1,clock:durOf(fl.byId.get(start)),mode:'auto',speed:1,options:null,msg:'',run:true,enter:true,skipSub:false,raf:0,edgeId:null};
+ simBar();SIM.raf=requestAnimationFrame(simTick);render();
+}
+function simLog(id){const n=getItem(id);SIM.steps++;SIM.clock+=n?durOf(n):0;SIM.trail.add(id);}
+function simTick(now){
+ if(!SIM||!SIM.run)return;
+ const dt=(now-SIM.t0)*SIM.speed;
+ if(SIM.phase==='dwell'){if(dt>=SIM.dwell)simDecide();}
+ else if(SIM.phase==='travel'){
+  const f=Math.min(1,dt/SIM.dur),p=SIM.pathEl.getPointAtLength(f*SIM.len);
+  SIM.token={x:p.x,y:p.y};
+  if(f>=1)simArrive(SIM.to);
+ }
+ if(SIM){render();if(SIM.run)SIM.raf=requestAnimationFrame(simTick);}
+}
+function simDecide(){
+ const n=getItem(SIM.cur);
+ if(!n){simFinish('Un box è stato eliminato: simulazione interrotta.');return;}
+ if(n.sub&&SIM.enter&&!SIM.skipSub){
+  SIM.stack.push(n.id);enterSub(n.id);
+  const fl=flowOf(S.items);
+  if(!fl.nodes.length){SIM.stack.pop();exitSub();SIM.skipSub=true;SIM.t0=performance.now();return;}
+  const st=pickStart(fl);SIM.cur=st;simLog(st);SIM.t0=performance.now();simBar();return;
+ }
+ SIM.skipSub=false;
+ const outs=outEdges(SIM.cur);
+ if(!outs.length){
+  if(SIM.stack.length){const pid=SIM.stack.pop();exitSub();SIM.cur=pid;SIM.skipSub=true;SIM.t0=performance.now();simBar();return;}
+  simFinish('Percorso concluso');return;
+ }
+ if(outs.length===1){simTravel(outs[0]);return;}
+ if(SIM.mode==='manual'){SIM.phase='wait';SIM.options=outs;SIM.run=false;simBar();render();return;}
+ simTravel(pickWeighted(outs));
+}
+function simTravel(e){
+ const g=edgeGeom(e);
+ if(!g){simFinish('Collegamento non valido');return;}
+ const p=document.createElementNS('http://www.w3.org/2000/svg','path');p.setAttribute('d',g.d);
+ SIM.pathEl=p;SIM.len=Math.max(1,p.getTotalLength());SIM.dur=Math.min(1100,Math.max(280,SIM.len/0.4));
+ SIM.to=e.to;SIM.edgeId=e.id;SIM.phase='travel';SIM.t0=performance.now();SIM.token=g.A;
+ simBar();
+}
+function simArrive(id){
+ SIM.cur=id;SIM.token=null;SIM.phase='dwell';SIM.t0=performance.now();SIM.edgeId=null;
+ simLog(id);simBar();
+ if(SIM.steps>500)simFinish('Fermata dopo 500 passi: il flusso contiene forse un ciclo senza uscita.');
+}
+function simPick(edgeId){
+ if(!SIM||SIM.phase!=='wait')return;
+ const e=SIM.options.find(x=>x.id===edgeId);SIM.options=null;
+ if(e){simTravel(e);SIM.run=true;SIM.raf=requestAnimationFrame(simTick);}
+}
+function simFinish(msg){
+ if(!SIM)return;
+ SIM.phase='done';SIM.msg=msg;SIM.run=false;cancelAnimationFrame(SIM.raf);SIM.token=null;simBar();render();
+}
+function simStop(){
+ if(!SIM)return;
+ cancelAnimationFrame(SIM.raf);const base=SIM.base;SIM=null;
+ if(S.stack.length>base)exitTo(base);
+ $('#runbar').style.display='none';render();
+}
+function simTogglePause(){
+ if(!SIM||SIM.phase==='done'||SIM.phase==='wait')return;
+ SIM.run=!SIM.run;
+ if(SIM.run){SIM.t0=performance.now();SIM.raf=requestAnimationFrame(simTick);}else cancelAnimationFrame(SIM.raf);
+ simBar();
+}
+function simStep(){
+ if(!SIM||SIM.phase==='done'||SIM.phase==='wait')return;
+ if(SIM.phase==='dwell')simDecide();else if(SIM.phase==='travel')simArrive(SIM.to);
+ if(SIM){render();simBar();}
+}
+function simBar(){
+ const b=$('#runbar');if(!SIM){b.style.display='none';return;}
+ let h=`<div class="rt"><b>Simulazione</b><span>passo ${SIM.steps}</span><span>tempo simulato ${esc(fmtMin(SIM.clock))}</span>${SIM.stack.length?`<span>livello ${SIM.stack.length+1}</span>`:''}<button class="x" data-r="stop" title="Chiudi (Esc)">✕</button></div><div class="rr">`;
+ if(SIM.phase==='wait'){
+  h+='<span style="font-size:13px">Scegli il ramo:</span>'+SIM.options.map(e=>`<button class="btn pri" data-r="pick" data-e="${e.id}">${esc(e.label?e.label+' → ':'')}${esc(labelOf(getItem(e.to)))}</button>`).join('');
+ }else if(SIM.phase==='done'){
+  h+=`<b style="font-size:13px">${esc(SIM.msg)}</b>`;
+ }else h+=`<button class="btn pri" data-r="pause">${SIM.run?'⏸ Pausa':'▶ Riprendi'}</button><button class="btn" data-r="step">Passo</button>`;
+ h+=`<span style="flex:1"></span><button class="btn" data-r="restart" title="Ricomincia">↺</button><select data-r="mode" title="Alle scelte"><option value="manual"${SIM.mode==='manual'?' selected':''}>Scelgo io</option><option value="auto"${SIM.mode==='auto'?' selected':''}>Casuale</option></select><select data-r="speed" title="Velocità">${[.5,1,2,4].map(v=>`<option value="${v}"${SIM.speed===v?' selected':''}>${v}x</option>`).join('')}</select><label style="font-size:12px;white-space:nowrap"><input type="checkbox" data-r="enter" style="width:auto"${SIM.enter?' checked':''}> sotto-lavagne</label></div>`;
+ b.innerHTML=h;b.style.display='block';
+}
+function simSVG(){
+ if(!SIM||exporting)return'';
+ const k=S.view.k;let s='';
+ S.items.forEach(n=>{
+  if(n.type!=='node')return;
+  if(SIM.trail.has(n.id))s+=`<rect x="${n.x-3}" y="${n.y-3}" width="${n.w+6}" height="${n.h+6}" rx="10" fill="rgba(34,197,94,.12)" stroke="#22c55e" stroke-width="${1.5/k}" pointer-events="none"/>`;
+  if(n.id===SIM.cur)s+=`<rect x="${n.x-5}" y="${n.y-5}" width="${n.w+10}" height="${n.h+10}" rx="12" fill="rgba(245,158,11,.14)" stroke="#f59e0b" stroke-width="${3/k}" pointer-events="none"/>`;
+ });
+ if(SIM.phase==='wait'&&SIM.options)SIM.options.forEach(e=>{const t=getItem(e.to);if(t)s+=`<rect x="${t.x-6}" y="${t.y-6}" width="${t.w+12}" height="${t.h+12}" rx="12" fill="none" stroke="#f59e0b" stroke-width="${2.5/k}" stroke-dasharray="${6/k} ${4/k}" pointer-events="none"/>`;});
+ if(SIM.token)s+=`<circle cx="${SIM.token.x}" cy="${SIM.token.y}" r="${Math.min(18,9/k)}" fill="#2563eb" stroke="#fff" stroke-width="${3/k}" pointer-events="none"/>`;
+ return s;
+}
+
+/* ---------- cronometro sul campo ---------- */
+let CH=null,CHT=0,ME=null,SYNCING_M=false;
+const MKEY=()=>'filo_misure_'+BID;
+let MEMQ=[]; // copia in memoria: serve se la memoria locale del browser non è disponibile (navigazione privata)
+function misureLoad(){try{const v=localStorage.getItem(MKEY());return v?JSON.parse(v):[];}catch(e){return MEMQ;}}
+function misureSave(q){MEMQ=q;try{localStorage.setItem(MKEY(),JSON.stringify(q));}catch(e){}}
+async function misureSync(){ // invia al database le rilevazioni ancora sul dispositivo
+ if(SYNCING_M||!BID||RO)return;
+ SYNCING_M=true;
+ try{
+  const q=misureLoad();let did=false;
+  for(const s of q){
+   if(s.sent)continue;
+   const rows=s.righe.map(r=>({lavagna_id:BID,sessione:s.id,nodo_id:r.nodo_id,nodo_testo:r.nodo_testo,percorso:r.percorso,inizio:r.inizio,fine:r.fine,durata_s:r.durata_s}));
+   const{error}=await sb.from('misure').upsert(rows,{onConflict:'sessione,nodo_id,inizio',ignoreDuplicates:true});
+   if(error)throw error;
+   s.sent=true;did=true;
+  }
+  misureSave(q.filter(s=>!s.sent));
+  if(did)toast('Misure salvate sulla lavagna.');
+ }catch(e){if(misureLoad().length)toast('Misure tenute sul dispositivo: le invio appena possibile.');}
+ finally{SYNCING_M=false;}
+}
+window.addEventListener('online',()=>misureSync());
+const chPath=()=>[S.title||'Lavagna'].concat(S.stack.map(r=>labelOf(anyItem(r.id)))).join(' › ');
+function chDescend(id){ // se il box ha una sotto-lavagna e la rilevazione entra nei livelli, scende fino al primo box "vero"
+ let t=id,g=0;
+ while(t&&g++<30){
+  const n=getItem(t);
+  if(n&&n.sub&&CH.enter){
+   CH.stack.push(t);enterSub(t);
+   const fl=flowOf(S.items);
+   if(!fl.nodes.length){CH.stack.pop();exitSub();return t;}
+   t=pickStart(fl);continue;
+  }
+  break;
+ }
+ return t;
+}
+function chStart(){
+ if(RO)return toast('Per rilevare i tempi serve il permesso di modifica.');
+ if(CH)return;
+ if(SIM)simStop();
+ const fl=flowOf(S.items);
+ if(fl.nodes.length<1)return toast('Prima disegna il flusso: servono box collegati da frecce.');
+ const pref=[...SEL].find(id=>fl.byId.has(id));
+ CH={id:uuid(),base:S.stack.length,stack:[],cur:null,s0:0,t:0,acc:0,run:false,righe:[],enter:true,wait:null,t0:Date.now()};
+ const first=chDescend(pickStart(fl,pref));
+ if(!first){CH=null;return toast('Flusso vuoto.');}
+ chBegin(first);
+ clearInterval(CHT);CHT=setInterval(chTick,250);
+}
+function chBegin(id){CH.cur=id;CH.s0=Date.now();CH.t=CH.s0;CH.acc=0;CH.run=true;CH.wait=null;chBar();}
+function chTick(){
+ const el=$('#chT');
+ if(el&&CH&&!CH.wait)el.textContent=fmtClock(CH.acc+(CH.run?Date.now()-CH.t:0));
+}
+function chBar(){
+ const b=$('#runbar');if(!CH){b.style.display='none';return;}
+ const n=getItem(CH.cur);
+ let h=`<div class="rt"><b>Cronometro sul campo</b><span>passo ${CH.righe.length+1}</span>${CH.stack.length?`<span>livello ${CH.stack.length+1}</span>`:''}<button class="x" data-c="cancel" title="Annulla la rilevazione (Esc)">✕</button></div>`;
+ if(CH.wait){
+  h+=`<div class="big">Come prosegue?</div><div class="rr">${CH.wait.outs.map(e=>`<button class="btn pri" data-c="pick" data-e="${e.id}">${esc(e.label?e.label+' → ':'')}${esc(labelOf(getItem(e.to)))}</button>`).join('')}</div>`;
+ }else{
+  const outs=outEdges(CH.cur),last=!outs.length&&!CH.stack.length;
+  h+=`<div class="big">${esc(labelOf(n))}</div><div class="rr"><span class="tim" id="chT">00:00</span><span style="flex:1"></span><button class="btn" data-c="pause">${CH.run?'⏸ Pausa':'▶ Riprendi'}</button><button class="btn pri" data-c="next">${last?'Fine ■':'Avanti ▶'}</button></div>`;
+ }
+ b.innerHTML=h;b.style.display='block';chTick();
+}
+function chPause(){
+ if(!CH||CH.wait)return;
+ const now=Date.now();
+ if(CH.run){CH.acc+=now-CH.t;CH.run=false;}else{CH.t=now;CH.run=true;}
+ chBar();
+}
+function chNext(){
+ if(!CH||CH.wait)return;
+ const n=getItem(CH.cur),now=Date.now(),ms=CH.acc+(CH.run?now-CH.t:0);
+ CH.righe.push({nodo_id:CH.cur,nodo_testo:labelOf(n),percorso:chPath(),inizio:new Date(CH.s0).toISOString(),fine:new Date(now).toISOString(),durata_s:Math.round(ms)/1000,prev:n?durOf(n):0});
+ chGo(CH.cur,null);
+}
+function chPick(edgeId){
+ if(!CH||!CH.wait)return;
+ const e=CH.wait.outs.find(x=>x.id===edgeId),from=CH.wait.from;CH.wait=null;
+ if(e)chGo(from,e);
+}
+function chGo(cur,e){ // dal box appena chiuso al prossimo da cronometrare (salendo e scendendo tra le sotto-lavagne)
+ for(let g=0;g<200;g++){
+  if(!e){
+   const outs=outEdges(cur);
+   if(!outs.length){
+    if(CH.stack.length){const pid=CH.stack.pop();exitSub();cur=pid;continue;}
+    chEnd();return;
+   }
+   if(outs.length>1){CH.wait={from:cur,outs};CH.run=false;chBar();return;}
+   e=outs[0];
+  }
+  chBegin(chDescend(e.to));return;
+ }
+}
+function chCancel(){
+ if(!CH)return;
+ if(CH.righe.length&&!confirm('Annullare la rilevazione? I tempi già misurati andranno persi.'))return;
+ clearInterval(CHT);const base=CH.base;CH=null;
+ if(S.stack.length>base)exitTo(base);
+ $('#runbar').style.display='none';
+}
+function chEnd(){
+ clearInterval(CHT);const c=CH;CH=null;
+ $('#runbar').style.display='none';
+ if(S.stack.length>c.base)exitTo(c.base);
+ const q=misureLoad();q.push({id:c.id,quando:new Date(c.t0).toISOString(),righe:c.righe,sent:false});misureSave(q);
+ misureSync();
+ chSummary(c);
+}
+function csvOut(rows,name){
+ const cols=['sessione','percorso','nodo','inizio','fine','durata_s','durata_min','previsto_min','scarto_pct'];
+ const q=v=>{const s=String(v==null?'':v);return /[;"\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
+ const num=v=>v==null||v===''||isNaN(v)?'':String(Math.round(v*100)/100).replace('.',',');
+ const lines=[cols.join(';')];
+ rows.forEach(r=>{
+  const n=anyItem(r.nodo_id),prev=r.prev!=null?r.prev:(n?durOf(n):null),dm=r.durata_s/60;
+  lines.push([r.sessione,r.percorso,r.nodo_testo,r.inizio,r.fine,num(r.durata_s),num(dm),prev>0?num(prev):'',prev>0?num((dm-prev)/prev*100):''].map(q).join(';'));
+ });
+ download(new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}),name);
+}
+function chSummary(c){
+ const tot=c.righe.reduce((a,r)=>a+r.durata_s,0),prevT=c.righe.reduce((a,r)=>a+(r.prev||0),0)*60;
+ const sc=(m,p)=>p>0?(Math.round((m/60-p)/p*100)>0?'+':'')+Math.round((m/60-p)/p*100)+'%':'';
+ let h=`<div style="display:flex;align-items:center;gap:8px"><h3 style="flex:1">Rilevazione conclusa</h3><button class="btn" data-t="close">Chiudi</button></div><div class="kpis" style="margin-top:8px"><div class="kpi"><small>Tempo misurato</small><b>${esc(fmtClock(tot*1000))}</b></div><div class="kpi"><small>Tempo previsto (dei passi toccati)</small><b>${prevT?esc(fmtMin(prevT/60)):'—'}</b></div><div class="kpi"><small>Passi</small><b>${c.righe.length}</b></div></div>`;
+ h+=`<table class="ft" style="margin-top:12px"><tr><th>Passo</th><th>Misurato</th><th>Previsto</th><th>Scarto</th></tr>${c.righe.map(r=>`<tr><td>${esc(r.nodo_testo)}<div class="hint2">${esc(r.percorso)}</div></td><td>${esc(fmtClock(r.durata_s*1000))}</td><td>${r.prev>0?esc(fmtMin(r.prev)):'—'}</td><td>${esc(sc(r.durata_s,r.prev))}</td></tr>`).join('')}</table>`;
+ h+=`<div class="top2"><button class="btn pri" data-t="csv1">Esporta CSV</button><span class="hint2">Le misure sono già salvate${misureLoad().length?' sul dispositivo (verranno inviate alla lavagna appena possibile)':' sulla lavagna'}.</span></div>`;
+ const card=sheet(h);
+ card.querySelector('[data-t="csv1"]').onclick=()=>csvOut(c.righe.map(r=>Object.assign({sessione:c.id},r)),'misure-'+fname()+'.csv');
+}
+async function misureSheet(){
+ const card=sheet('<h3>Misure sul campo</h3><p class="hint2">Caricamento…</p>');
+ let remote=[],err='';
+ try{const{data,error}=await sb.from('misure').select('*').eq('lavagna_id',BID).order('inizio');if(error)throw error;remote=data||[];}catch(e){err=(e&&e.message)||String(e);}
+ const local=[];
+ misureLoad().forEach(s=>s.righe.forEach(r=>local.push({sessione:s.id,user_id:ME,nodo_id:r.nodo_id,nodo_testo:r.nodo_testo,percorso:r.percorso,inizio:r.inizio,fine:r.fine,durata_s:r.durata_s})));
+ const all=remote.concat(local);
+ let h=`<div style="display:flex;align-items:center;gap:8px"><h3 style="flex:1">Misure sul campo · ${esc(S.title||'Lavagna')}</h3><button class="btn" data-t="close">Chiudi</button></div>`;
+ if(err)h+=`<div class="warn">Non riesco a leggere le misure dalla lavagna (${esc(err)}). Qui sotto vedi solo quelle ancora sul dispositivo.</div>`;
+ if(!all.length){card.innerHTML=h+'<p class="hint2" style="margin-top:12px">Nessuna misura ancora: avvia una rilevazione con il pulsante del cronometro.</p>';return;}
+ const ag=new Map();
+ all.forEach(r=>{const a=ag.get(r.nodo_id)||{id:r.nodo_id,t:r.nodo_testo,p:r.percorso,n:0,s:0,mn:1e12,mx:0};a.n++;a.s+=+r.durata_s;a.mn=Math.min(a.mn,+r.durata_s);a.mx=Math.max(a.mx,+r.durata_s);a.t=r.nodo_testo;ag.set(r.nodo_id,a);});
+ const rows=[...ag.values()],ses=new Map();
+ all.forEach(r=>{const s=ses.get(r.sessione)||{id:r.sessione,q:r.inizio,n:0,t:0,u:r.user_id};s.n++;s.t+=+r.durata_s;if(r.inizio<s.q)s.q=r.inizio;ses.set(r.sessione,s);});
+ h+=`<div class="top2"><button class="btn pri" data-t="csvall">Esporta tutte (CSV)</button><span class="hint2">${ses.size} rilevazioni · ${all.length} misure</span></div>`;
+ h+='<h4>Misurato e previsto, per passo</h4><table class="ft"><tr><th>Passo</th><th>Misure</th><th>Media</th><th>Min</th><th>Max</th><th>Previsto</th><th>Scarto</th></tr>';
+ rows.forEach(a=>{
+  const n=anyItem(a.id),prev=n?durOf(n):0,avg=a.s/a.n/60,d=prev>0?Math.round((avg-prev)/prev*100):null;
+  h+=`<tr><td>${esc(a.t)}<div class="hint2">${esc(a.p||'')}</div></td><td>${a.n}</td><td>${esc(fmtMin(avg))}</td><td>${esc(fmtMin(a.mn/60))}</td><td>${esc(fmtMin(a.mx/60))}</td><td>${prev>0?esc(fmtMin(prev)):'—'}</td><td>${d==null?'':(d>0?'+':'')+d+'%'}</td></tr>`;
+ });
+ h+='</table><h4>Rilevazioni</h4><table class="ft"><tr><th>Quando</th><th>Passi</th><th>Durata</th><th>Chi</th></tr>';
+ [...ses.values()].sort((a,b)=>a.q<b.q?1:-1).forEach(s=>{h+=`<tr><td>${esc(new Date(s.q).toLocaleString('it-IT'))}</td><td>${s.n}</td><td>${esc(fmtClock(s.t*1000))}</td><td>${s.u&&s.u===ME?'tu':'altro utente'}</td></tr>`;});
+ card.innerHTML=h+'</table>';
+ card.querySelector('[data-t="csvall"]').onclick=()=>csvOut(all,'misure-'+fname()+'.csv');
+}
+
+/* ---------- barra della simulazione e del cronometro ---------- */
+$('#runbar').addEventListener('click',e=>{
+ const b=e.target.closest('[data-r],[data-c]');if(!b)return;
+ if(b.dataset.r){
+  const a=b.dataset.r;
+  if(a==='stop')simStop();else if(a==='pick')simPick(b.dataset.e);else if(a==='restart'){simStop();simStart();}
+  else if(a==='pause')simTogglePause();else if(a==='step')simStep();
+ }else{
+  const a=b.dataset.c;
+  if(a==='cancel')chCancel();else if(a==='pause')chPause();else if(a==='next')chNext();else if(a==='pick')chPick(b.dataset.e);
+ }
+});
+$('#runbar').addEventListener('change',e=>{
+ const t=e.target;if(!SIM)return;
+ if(t.dataset.r==='mode')SIM.mode=t.value;
+ else if(t.dataset.r==='speed')SIM.speed=+t.value;
+ else if(t.dataset.r==='enter')SIM.enter=t.checked;
+});
+
 /* ---------- editing testo ---------- */
 function layoutEditor(){
  if(!editing)return;
@@ -1304,6 +1924,7 @@ svg.addEventListener('pointerdown',e=>{
  const el=e.target.closest?e.target.closest('[data-role]'):null;
  const role=el?el.dataset.role:null,id=el?el.dataset.id:null;
  try{svg.setPointerCapture(e.pointerId);}catch(x){}
+ if(role==='link'){const itl=getItem(id),ul=itl&&safeUrl(itl.url);if(ul)window.open(ul,'_blank','noopener,noreferrer');return;}
  if(RO&&id){ // in sola lettura: doppio clic su un box con sotto-lavagna la apre
   const it0=getItem(id),t0=Date.now();
   if(it0&&it0.type==='node'&&it0.sub&&lastDown.id===id&&t0-lastDown.t<380){lastDown={id:null,t:0};enterSub(id);return;}
@@ -1553,6 +2174,7 @@ document.addEventListener('keydown',e=>{
  if(tn==='INPUT'||tn==='TEXTAREA'||tn==='SELECT')return;
  const mod=e.ctrlKey||e.metaKey,k=e.key.toLowerCase();
  if(e.altKey&&e.key==='ArrowLeft'&&S.stack.length){e.preventDefault();exitSub();return;}
+ if(e.key==='Escape'&&(SIM||CH)){e.preventDefault();if(SIM)simStop();else chCancel();return;}
  if(RO){
   if(mod&&k==='1'){e.preventDefault();fitView();}
   else if(mod&&k==='0'){e.preventDefault();S.view.k=1;render();}
@@ -1561,7 +2183,7 @@ document.addEventListener('keydown',e=>{
  }
  if(mod&&k==='z'){e.preventDefault();e.shiftKey?redo():undo();return;}
  if(mod&&k==='y'){e.preventDefault();redo();return;}
- if(mod&&k==='a'){e.preventDefault();SEL.clear();S.items.forEach(i=>{if(i.type!=='edge')SEL.add(i.id);});selChanged();return;}
+ if(mod&&k==='a'){e.preventDefault();SEL.clear();S.items.forEach(i=>{if(i.type!=='edge'&&i.type!=='scenari')SEL.add(i.id);});selChanged();return;}
  if(mod&&k==='c'){const l=collectForCopy();if(l.length)clipboard=l;return;}
  if(mod&&k==='v')return; // l'incolla (immagini o elementi copiati) è gestito dall'evento paste
  if(mod&&k==='d'){e.preventDefault();const l=collectForCopy();if(l.length)insertClones(l,24);return;}
@@ -1718,6 +2340,14 @@ function nodePanel(nodes){
  if(n.shape!=='text'&&n.shape!=='image'&&!isFrame(n))h+=`<div class="sec"><div class="lab">ICONA ${n.shape==='icon'?'':'NEL BOX'}</div><div class="row"><button class="btn" data-act="iconpick">${n.icon?'Cambia icona':'Scegli icona'}</button>${n.icon&&n.shape!=='icon'?'<button class="btn" data-act="iconclear">Rimuovi</button>':''}</div></div>`;
  if(n.shape==='image')h+=`<div class="sec"><div class="lab">IMMAGINE</div><button class="btn" data-act="imgar">Proporzioni originali</button><div class="hint2" style="margin-top:6px">Il testo del box diventa la didascalia sotto l'immagine.</div></div>`;
  if(nodes.length===1&&!isFrame(n)&&n.shape!=='text'&&n.shape!=='icon')h+=`<div class="sec"><div class="lab">SOTTO-LAVAGNA</div>${n.sub?`<div class="hint2" style="margin-bottom:6px">Contiene ${subCount(n.id)} elementi</div><div class="row"><button class="btn pri" data-act="opensub">Apri</button><button class="btn" data-act="rmsub" style="color:#dc2626">Rimuovi</button></div>`:`<button class="btn" data-act="mksub">Crea sotto-lavagna</button>`}<div class="hint2" style="margin-top:6px">Doppio clic sul box per aprirla · <kbd>Alt</kbd>+<kbd>←</kbd> per tornare indietro</div></div>`;
+ if(!isFrame(n)){
+  const roles=[...new Set(allItems().filter(i=>i.type==='node'&&i.role).map(i=>i.role))];
+  const same=k=>nodes.every(x=>String(x[k]??'')===String(n[k]??''))?esc(n[k]??''):'';
+  h+=`<div class="sec"><div class="lab">TEMPO E RUOLO</div><div class="row"><input class="fld" type="number" min="0" step="any" style="flex:1" data-act="dur" value="${same('dur')}" placeholder="Durata (minuti)"><input class="fld" list="rolelist" style="flex:1" data-act="role" value="${same('role')}" placeholder="Ruolo"></div><datalist id="rolelist">${roles.map(r=>`<option value="${esc(r)}">`).join('')}</datalist><div class="hint2" style="margin-top:6px">Servono per i tempi previsti, il percorso critico e il carico per ruolo (pulsante con l'orologio in alto).</div></div>`;
+ }
+ if(nodes.length===1&&!isFrame(n)){
+  h+=`<div class="sec"><div class="lab">LINK</div><input class="fld" data-act="url" value="${esc(n.url||'')}" placeholder="https://… (sito, mail, altra lavagna)">${n.url&&!safeUrl(n.url)?'<div class="hint2" style="color:#dc2626;margin-top:4px">Indirizzo non valido: usa http, https, mailto o tel.</div>':''}${safeUrl(n.url)?'<div class="row" style="margin-top:6px"><button class="btn" data-act="urlopen">Apri il link</button></div>':''}</div>`;
+ }
  return h;
 }
 function edgePanel(edges){
@@ -1728,6 +2358,7 @@ function edgePanel(edges){
  <div class="sec"><div class="lab">COLORE</div>${swatches(e.color,'ecolor')}</div>
  <div class="sec"><div class="lab">SPESSORE: ${e.w||2}</div><input type="range" min="1" max="8" step="0.5" value="${e.w||2}" data-act="ew"></div>
  <div class="sec"><div class="lab">ETICHETTA</div><input class="fld" data-act="elabel" value="${esc(e.label||'')}" placeholder="Testo sulla linea"></div>
+ <div class="sec"><div class="lab">PROBABILITÀ DEL RAMO (%)</div><input class="fld" type="number" min="0" max="100" step="any" data-act="prob" value="${e.prob==null?'':esc(e.prob)}" placeholder="Automatica"><div class="hint2" style="margin-top:6px">Per le scelte: se la lasci vuota i rami si dividono in parti uguali.</div></div>
  <div class="sec row"><button class="btn" data-act="flip">Inverti direzione</button><button class="btn" data-act="sidesauto">Lati automatici</button></div>`;
 }
 function linePanel(lines){
@@ -1844,6 +2475,11 @@ function act(a,v){
   case 'pw':P().forEach(p=>p.w=+v);break;
   case 'front':{const ids=[...SEL];const m=S.items.filter(i=>ids.includes(i.id));S.items=S.items.filter(i=>!ids.includes(i.id)).concat(m);break;}
   case 'back':{const ids=[...SEL];const m=S.items.filter(i=>ids.includes(i.id));S.items=m.concat(S.items.filter(i=>!ids.includes(i.id)));break;}
+  case 'url':N().forEach(n=>{const t=String(v||'').trim();if(t)n.url=t;else delete n.url;});break;
+  case 'urlopen':{const n=N()[0],u=n&&safeUrl(n.url);if(u)window.open(u,'_blank','noopener,noreferrer');return;}
+  case 'dur':N().forEach(n=>{if(v===''||isNaN(+v))delete n.dur;else n.dur=Math.max(0,+v);});break;
+  case 'role':N().forEach(n=>{const t=String(v||'').trim();if(t)n.role=t;else delete n.role;});break;
+  case 'prob':E().forEach(e=>{if(v===''||isNaN(+v))delete e.prob;else e.prob=clamp(+v,0,100);});break;
   case 'mksub':case 'opensub':{const id=[...SEL][0];if(id)enterSub(id);return;}
   case 'rmsub':{const id=[...SEL][0],n=getItem(id);if(n&&n.sub&&(!subCount(id)||confirm('Eliminare la sotto-lavagna e tutto il suo contenuto?'))){dropSubs([id]);delete n.sub;}break;}
   case 'imgar':{selOf('node').forEach(n=>{if(n.shape==='image'&&n.ar)n.h=Math.round(n.w/n.ar);});break;}
@@ -2256,7 +2892,7 @@ $('#bOpen').innerHTML=uic('up',16)+' Apri';
 $('#bSave').innerHTML=uic('down',16)+' Salva JSON';
 $('#bPng').innerHTML=uic('image',16)+' Esporta PNG';
 $('#bNew').innerHTML=uic('file',18);
-function syncToggles(){$('#bGrid').classList.toggle('on',S.grid);$('#bSnap').classList.toggle('on',S.snap);}
+function syncToggles(){$('#bGrid').classList.toggle('on',S.grid);$('#bSnap').classList.toggle('on',S.snap);$('#bMap').classList.toggle('on',showMini);}
 $('#bUndo').addEventListener('click',undo);$('#bRedo').addEventListener('click',redo);
 $('#bZm').addEventListener('click',()=>zoomAt(1/1.2,svg.clientWidth/2,svg.clientHeight/2));
 $('#bZp').addEventListener('click',()=>zoomAt(1.2,svg.clientWidth/2,svg.clientHeight/2));
@@ -2270,6 +2906,11 @@ $('#bSave').addEventListener('click',saveJSON);
 $('#bPng').addEventListener('click',exportPNG);
 $('#bPngAll').innerHTML=uic('layers',16)+' Esporta tutto';
 $('#bPngAll').addEventListener('click',exportAll);
+$('#bMap').innerHTML=uic('map',18);$('#bSim').innerHTML=uic('play',18);$('#bTime').innerHTML=uic('clock',18);$('#bChrono').innerHTML=uic('timer',18);
+$('#bMap').addEventListener('click',()=>{showMini=!showMini;$('#bMap').classList.toggle('on',showMini);save();drawMini();});
+$('#bSim').addEventListener('click',()=>{if(SIM)simStop();else simStart();});
+$('#bTime').addEventListener('click',timeSheet);
+$('#bChrono').addEventListener('click',()=>{if(!CH)chStart();});
 $('#bNew').addEventListener('click',()=>newBoard(true));
 $('#title').addEventListener('input',e=>{S.title=e.target.value;});
 $('#title').addEventListener('change',()=>commit());
@@ -2324,7 +2965,7 @@ async function syncOnce(){
  const ins=[],upd=[],del=[],undo=[];
  cur.forEach((it,id)=>{
   const data=Object.assign({},it,{_o:ord.get(id)}),j=canon(data),k=known.get(id);
-  if(!k){const row=crypto.randomUUID();ins.push({id:row,lavagna_id:BID,dati:data});known.set(id,{row,json:j});rowToItem.set(row,id);undo.push(()=>{known.delete(id);rowToItem.delete(row);});}
+  if(!k){const row=uuid();ins.push({id:row,lavagna_id:BID,dati:data});known.set(id,{row,json:j});rowToItem.set(row,id);undo.push(()=>{known.delete(id);rowToItem.delete(row);});}
   else if(k.json!==j){const prev=k.json;upd.push({row:k.row,dati:data});k.json=j;undo.push(()=>{k.json=prev;});}
  });
  known.forEach((k,id)=>{if(!cur.has(id)){del.push(k.row);undo.push(()=>{known.set(id,k);rowToItem.set(k.row,id);});}});
@@ -2382,10 +3023,12 @@ async function boot(){
   if(prefs.defaults)S.defaults=Object.assign(S.defaults,prefs.defaults);
   if(typeof prefs.grid==='boolean')S.grid=prefs.grid;
   if(typeof prefs.snap==='boolean')S.snap=prefs.snap;
+  if(typeof prefs.mini==='boolean')showMini=prefs.mini;
  }catch(e){}
  const home=()=>location.replace('index.html');
  const{data:{session}}=await sb.auth.getSession();
  if(!session||!BID)return home();
+ ME=session.user.id;
  const{data:aal}=await sb.auth.mfa.getAuthenticatorAssuranceLevel();
  if(aal.currentLevel!=='aal2')return home();
  const[lav,mem]=await Promise.all([
@@ -2403,6 +3046,7 @@ async function boot(){
  syncToggles();setTool('select');
  hist=[snapshot()];hi=0;
  loaded=true;setStat(RO?'Sola lettura':'Salvato ✓',RO?'':'#16a34a');
+ if(!RO)misureSync();
  updateProps();doRender();fitView();
  sb.channel('elementi-'+BID).on('postgres_changes',{event:'*',schema:CONFIG.app,table:'elementi',filter:'lavagna_id=eq.'+BID},onRemote).subscribe();
  window.__lav={S,SEL,render:doRender,act,setTool,exportPNG,exportAll,enterSub,exitSub,addImages,known,ord};
