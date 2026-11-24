@@ -1426,7 +1426,7 @@ const levelName=()=>[S.title||'Lavagna'].concat(S.stack.map(r=>labelOf(anyItem(r
 function timeSheet(){
  const A=analyze(curLevel()),sc=actScen(),sl=scenList(),dis=RO?' disabled':'';
  const pub=!!$('#credits');
- let h=`<div style="display:flex;align-items:center;gap:8px"><h3 style="flex:1">Tempi · ${esc(levelName())}</h3><button class="btn" data-t="close">Chiudi</button></div>`;
+ let h=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><h3 style="flex:1">Tempi · ${esc(levelName())}</h3><button class="btn" data-t="tcsv" title="Tabella per Excel">Esporta CSV</button><button class="btn" data-t="tpdf" title="Report da stampare o salvare in PDF">Esporta PDF</button><button class="btn" data-t="close">Chiudi</button></div>`;
  h+=`<div class="top2"><b style="font-size:13px">Scenario</b><select data-t="scen"><option value="">Base (valori dei box)</option>${sl.map(s=>`<option value="${s.id}"${s.id===ACT_SC?' selected':''}>${esc(s.name)}</option>`).join('')}</select><button class="btn" data-t="scnew"${dis}>+ Nuovo</button>`;
  if(sc)h+=`<button class="btn" data-t="scren"${dis}>Rinomina</button><button class="btn" data-t="scdel"${dis} style="color:#dc2626">Elimina</button><label style="font-size:12.5px">Durate al <input type="number" min="1" step="5" data-t="scmul" value="${sc.mul||100}" style="width:76px"${dis}> %</label>`;
  h+=`<span style="flex:1"></span>${pub?'':'<button class="btn" data-t="misure">Misure sul campo</button>'}<button class="btn${HEAT?' pri':''}" data-t="heat">Mappa del calore: ${HEAT?'accesa':'spenta'}</button></div>`;
@@ -1465,6 +1465,8 @@ document.addEventListener('click',e=>{
  if(a==='close')closeSheet();
  else if(a==='heat'){HEAT=!HEAT;HEATC=null;render();timeSheet();}
  else if(a==='misure')misureSheet();
+ else if(a==='tcsv')tempiCsv();
+ else if(a==='tpdf')tempiPdf();
  else if(a==='scnew'&&!RO){
   const s=ensureScen(),name=prompt('Nome del nuovo scenario','Scenario '+(s.list.length+1));
   if(!name||!name.trim())return;
@@ -1495,6 +1497,66 @@ document.addEventListener('change',e=>{
   commit();HEATC=null;render();timeSheet();
  }
 });
+
+/* ---------- export dei tempi: CSV e report PDF ---------- */
+function tempiData(){
+ const A=analyze(curLevel()),sc=actScen();
+ const roles=[...A.roles.entries()].sort((a,b)=>b[1]-a[1]).map(r=>({r:r[0],m:r[1],p:A.total?r[1]/A.total*100:0}));
+ const rows=A.rows.map(r=>({path:r.path,name:labelOf(r.n),visits:r.visits,dur:durOf(r.n),role:r.n.role||'',contrib:r.contrib}));
+ const groups=new Map(),branches=[];
+ allItems().filter(e=>e.type==='edge').forEach(e=>{if(!groups.has(e.from))groups.set(e.from,[]);groups.get(e.from).push(e);});
+ groups.forEach((es,from)=>{
+  const fn=anyItem(from);if(!fn||es.length<2)return;
+  const w=branchW(es);
+  es.forEach((e,i)=>branches.push({from:labelOf(fn),label:e.label||'',to:labelOf(anyItem(e.to)),set:probOf(e),eff:w[i]*100}));
+ });
+ return{lv:levelName(),scen:sc?sc.name:'Base (valori dei box)',total:A.total,mn:A.mn.t,mx:A.mx.t,path:A.mx.path.map(id=>labelOf(A.I.fl.byId.get(id))),missing:A.missing,roles,rows,branches,inf:A.inf};
+}
+function tempiCsv(){
+ const d=tempiData();
+ if(!d.rows.length)return toast('Non c\'è ancora un flusso da esportare.');
+ const num=v=>v==null||v===''||isNaN(v)?'':String(Math.round(v*100)/100).replace('.',',');
+ const q=v=>{const s=String(v==null?'':v);return /[;"\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
+ const L=[],line=(...a)=>L.push(a.map(q).join(';'));
+ line('Lavagna',d.lv);line('Scenario',d.scen);line('Data',new Date().toLocaleDateString('it-IT'));line();
+ line('Riepilogo','minuti');line('Tempo atteso',num(d.total));line('Percorso più breve',num(d.mn));line('Percorso più lungo (critico)',num(d.mx));
+ line('Percorso critico',d.path.join(' > '));line('Box senza durata',d.missing.length);line();
+ line('Carico per ruolo','minuti attesi','% del totale');d.roles.forEach(r=>line(r.r,num(r.m),num(r.p)));line();
+ line('Box','Livello','Visite attese','Durata (min)','Ruolo','Contributo (min)');d.rows.forEach(r=>line(r.name,r.path,num(r.visits),num(r.dur),r.role,num(r.contrib)));line();
+ line('Scelta','Ramo','Probabilità impostata (%)','Probabilità effettiva (%)');d.branches.forEach(b=>line(b.from,(b.label?b.label+' → ':'')+b.to,num(b.set),num(b.eff)));
+ download(new Blob(['﻿'+L.join('\r\n')],{type:'text/csv;charset=utf-8'}),'tempi-'+fname()+'.csv');
+ toast('CSV esportato.');
+}
+function printHtml(html){ // stampa un documento in un frame nascosto: dalla finestra di stampa si sceglie «Salva come PDF»
+ const f=document.createElement('iframe');
+ f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';
+ document.body.appendChild(f);
+ const w=f.contentWindow,doc=f.contentDocument;
+ doc.open();doc.write(html);doc.close();
+ const go=()=>{try{w.focus();w.print();}catch(e){toast('Stampa non riuscita: prova con Ctrl+P.');}setTimeout(()=>f.remove(),120000);};
+ if(doc.readyState==='complete')setTimeout(go,300);else f.onload=()=>setTimeout(go,300);
+}
+async function tempiPdf(){
+ const d=tempiData();
+ if(!d.rows.length)return toast('Non c\'è ancora un flusso da esportare.');
+ toast('Preparo il report… poi scegli «Salva come PDF» nella finestra di stampa.');
+ let img='';
+ try{const bl=await levelBlob(S.items,null);if(bl)img=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(bl);});}catch(e){}
+ const rmax=d.roles.length?d.roles[0].m:0,n2=v=>(Math.round(v*100)/100).toString().replace('.',',');
+ const css='@page{size:A4;margin:14mm}*{box-sizing:border-box}body{font-family:Segoe UI,Arial,sans-serif;color:#0f172a;font-size:11.5px;line-height:1.45;-webkit-print-color-adjust:exact;print-color-adjust:exact}h1{font-size:20px;margin:0 0 2px;color:#1e3a8a}h2{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#64748b;margin:18px 0 6px}.meta{color:#64748b;font-size:11px}.k{display:flex;gap:8px;margin-top:10px}.k div{flex:1;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px}.k small{display:block;color:#64748b;font-size:10px}.k b{font-size:16px}table{width:100%;border-collapse:collapse}th{text-align:left;color:#64748b;font-size:10px;border-bottom:1px solid #cbd5e1;padding:4px 6px}td{padding:4px 6px;border-bottom:1px solid #eef2f7}tr{page-break-inside:avoid}.b{height:8px;background:#dbeafe;border-radius:4px;overflow:hidden;min-width:90px}.b i{display:block;height:100%;background:#2563eb}img{max-width:100%;border:1px solid #e2e8f0;border-radius:8px}.w{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:6px;padding:6px 8px;margin-top:8px}footer{margin-top:22px;color:#94a3b8;font-size:10px;text-align:center}.r{text-align:right}';
+ let h=`<!DOCTYPE html><html lang="it"><head><meta charset="utf-8"><title>Tempi - ${esc(d.lv)}</title><style>${css}</style></head><body>`;
+ h+=`<h1>${esc(d.lv)}</h1><div class="meta">Tempi previsti · scenario: ${esc(d.scen)} · ${new Date().toLocaleDateString('it-IT')}</div>`;
+ h+=`<div class="k"><div><small>Tempo atteso</small><b>${esc(fmtMin(d.total))}</b></div><div><small>Percorso più breve</small><b>${esc(fmtMin(d.mn))}</b></div><div><small>Percorso più lungo (critico)</small><b>${esc(fmtMin(d.mx))}</b></div><div><small>Box senza durata</small><b>${d.missing.length}</b></div></div>`;
+ if(d.inf)h+='<div class="w">Il flusso contiene un ciclo senza uscita: il tempo atteso non è calcolabile.</div>';
+ if(d.missing.length)h+=`<div class="w">Senza durata (valgono 0): ${esc(d.missing.slice(0,12).join(', '))}${d.missing.length>12?'…':''}</div>`;
+ if(img)h+=`<h2>Il flusso</h2><img src="${img}" alt="Flusso">`;
+ h+=`<h2>Percorso critico (il più lungo)</h2><div>${d.path.map(esc).join(' → ')}</div>`;
+ if(d.roles.length)h+=`<h2>Carico per ruolo (tempo atteso)</h2><table>${d.roles.map(r=>`<tr><td style="width:28%">${esc(r.r)}</td><td><div class="b"><i style="width:${rmax?Math.round(r.m/rmax*100):0}%"></i></div></td><td class="r" style="white-space:nowrap">${esc(fmtMin(r.m))} · ${Math.round(r.p)}%</td></tr>`).join('')}</table>`;
+ h+=`<h2>Box</h2><table><tr><th>Box</th><th class="r">Visite attese</th><th class="r">Durata (min)</th><th>Ruolo</th><th class="r">Contributo</th></tr>${d.rows.map(r=>`<tr><td>${r.path?'<span style="color:#94a3b8">'+esc(r.path)+' › </span>':''}${esc(r.name)}</td><td class="r">${n2(r.visits)}</td><td class="r">${n2(r.dur)}</td><td>${esc(r.role)}</td><td class="r">${esc(fmtMin(r.contrib))}</td></tr>`).join('')}</table>`;
+ if(d.branches.length)h+=`<h2>Probabilità dei rami</h2><table><tr><th>Scelta</th><th>Ramo</th><th class="r">Impostata</th><th class="r">Effettiva</th></tr>${d.branches.map(b=>`<tr><td>${esc(b.from)}</td><td>${esc((b.label?b.label+' → ':'')+b.to)}</td><td class="r">${b.set==null?'automatica':n2(b.set)+'%'}</td><td class="r">${Math.round(b.eff)}%</td></tr>`).join('')}</table>`;
+ h+='<footer>Creato con Filo · Fabrizio Cuozzo · © 2026</footer></body></html>';
+ printHtml(h);
+}
 
 /* ---------- simulazione del flusso ---------- */
 let SIM=null;
