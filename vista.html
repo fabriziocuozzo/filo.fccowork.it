@@ -258,6 +258,12 @@ body.ro #stage{grid-column:1}
   <h3>Genera da testo</h3>
   <div class="hint2" style="margin-bottom:10px">Una riga = un passo. Una riga che finisce con <b>?</b> è una decisione: le righe rientrate sotto sono i rami (<code>Sì: …</code> / <code>No: …</code>). Con <code>-&gt; testo</code> torni a un passo precedente. Per la mappa mentale usa i rientri come albero.</div>
   <textarea id="gtxt" spellcheck="false" placeholder="Inizio&#10;Ricevi la richiesta&#10;È tutto corretto?&#10;  Sì: Conferma&#10;  No: Correggi i dati&#10;Fine"></textarea>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0 0">
+    <button class="btn" id="gImp" title="Legge un file di testo, Markdown, CSV o Word e lo trasforma in righe, senza intelligenza artificiale">Importa da file…</button>
+    <button class="btn" id="gPrompt" title="Copia un testo da incollare nella chat del tuo assistente insieme al documento">Copia il prompt per un assistente</button>
+    <input type="file" id="gfile" accept=".txt,.md,.markdown,.csv,.docx,text/plain,text/markdown,text/csv" style="display:none">
+    <span class="hint2" id="gmsg" style="flex:1;min-width:180px"></span>
+  </div>
   <div class="g3">
     <div><label>Tipo</label><select id="gmode"><option value="flow">Diagramma di flusso</option><option value="mind">Mappa mentale</option><option value="org">Organigramma</option></select></div>
     <div><label>Direzione (flusso)</label><select id="gdir"><option value="v">Verticale</option><option value="h">Orizzontale</option></select></div>
@@ -2932,7 +2938,8 @@ function genOrg(items,opt){
  return out.concat(list);
 }
 function generate(){
- const txt=$('#gtxt').value;
+ const txt=cleanAiText($('#gtxt').value);
+ $('#gtxt').value=txt;
  if(!txt.trim()){toast('Scrivi prima il testo da trasformare.');return;}
  const mode=$('#gmode').value,style=$('#gstyle').value;
  const items=parseRows(txt);
@@ -2945,6 +2952,144 @@ function generate(){
 $('#gstyle').innerHTML=STYLES.map(s=>`<option value="${s[0]}" ${s[0]==='gshadow'?'selected':''}>${s[1]}</option>`).join('');
 $('#gEx').addEventListener('click',()=>{const m=$('#gmode').value;$('#gtxt').value=m==='mind'?EXAMPLE_MIND:m==='org'?EXAMPLE_ORG:EXAMPLE_FLOW;});
 $('#gmode').addEventListener('change',()=>{$('#gdir').disabled=$('#gmode').value!=='flow';});
+
+/* ---------- importa un documento (a regole, senza IA) e prompt per un assistente ---------- */
+function cleanAiText(t){ // toglie i recinti ``` e la riga col nome del linguaggio che gli assistenti aggiungono alle risposte
+ return String(t||'').replace(/\r/g,'').replace(/^\s*```[a-zA-Z]*\s*$/gm,'').replace(/^﻿/,'').replace(/\n{3,}/g,'\n\n').trim();
+}
+function docRows(raw){ // testo libero, Markdown o elenchi → righe {level,text}
+ const rows=[];let marks=false,head=-1;
+ raw.replace(/\r/g,'').split('\n').forEach(line=>{
+  if(!line.trim())return;
+  const ws=line.match(/^(\s*)/)[1].replace(/\t/g,'  ').length,indent=Math.floor(ws/2);
+  let t=line.trim(),m=t.match(/^(#{1,6})\s+(.*)$/);
+  if(m){head=m[1].length-1;rows.push({level:head,text:m[2].trim()});marks=true;return;}
+  m=t.match(/^(\d+(?:\.\d+)+)[.)]?\s+(.*)$/);                     // 1.2.3 Titolo → il livello è il numero di punti
+  if(m){head=m[1].split('.').length-1;rows.push({level:head,text:m[2].trim()});marks=true;return;}
+  const s=t.replace(/^([-*•·–—▪●○◦]|\(?\d+[.)]|\(?[a-zA-Z][.)])\s+/,'');
+  if(s!==t)marks=true;
+  rows.push({level:(head>=0?head+1:0)+indent,text:s.replace(/:\s*$/,'').trim()});   // gli elenchi stanno sotto l'ultimo titolo
+ });
+ return{rows,marks};
+}
+async function docxRows(file){ // legge il testo di un .docx (che è un archivio ZIP) con titoli ed elenchi
+ const buf=await file.arrayBuffer(),u=new Uint8Array(buf),dv=new DataView(buf);
+ let e=u.length-22;while(e>=0&&dv.getUint32(e,true)!==0x06054b50)e--;
+ if(e<0)throw new Error('non sembra un file Word (.docx)');
+ const n=dv.getUint16(e+10,true);let p=dv.getUint32(e+16,true),found=null;
+ for(let i=0;i<n;i++){
+  const nl=dv.getUint16(p+28,true),el=dv.getUint16(p+30,true),cl=dv.getUint16(p+32,true);
+  if(new TextDecoder().decode(u.subarray(p+46,p+46+nl))==='word/document.xml'){found={method:dv.getUint16(p+10,true),csz:dv.getUint32(p+20,true),lo:dv.getUint32(p+42,true)};break;}
+  p+=46+nl+el+cl;
+ }
+ if(!found)throw new Error('nel file Word non trovo il testo');
+ const start=found.lo+30+dv.getUint16(found.lo+26,true)+dv.getUint16(found.lo+28,true),data=u.subarray(start,start+found.csz);
+ let xml;
+ if(found.method===0)xml=new TextDecoder().decode(data);
+ else if(found.method===8){
+  if(typeof DecompressionStream==='undefined')throw new Error('questo browser non sa aprire i file Word: salva il documento come testo (.txt)');
+  xml=await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();
+ }else throw new Error('formato del file Word non supportato');
+ const doc=new DOMParser().parseFromString(xml,'application/xml'),W='http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+ const rows=[];let lastHead=-1,marks=false;
+ [...doc.getElementsByTagNameNS(W,'p')].forEach(p=>{
+  const t=[...p.getElementsByTagNameNS(W,'t')].map(x=>x.textContent).join('').replace(/\s+/g,' ').trim();if(!t)return;
+  const st=p.getElementsByTagNameNS(W,'pStyle')[0],style=st?(st.getAttributeNS(W,'val')||''):'',il=p.getElementsByTagNameNS(W,'ilvl')[0],hm=/^(?:Heading|Titolo)\s*(\d)/i.exec(style);
+  if(il){rows.push({level:Math.max(0,lastHead+1)+(+il.getAttributeNS(W,'val')||0),text:t});marks=true;}
+  else if(hm){lastHead=+hm[1]-1;rows.push({level:lastHead,text:t});marks=true;}
+  else rows.push({level:lastHead>=0?lastHead+1:0,text:t});
+ });
+ return{rows,marks};
+}
+function csvRows(text){
+ const lines=text.replace(/\r/g,'').split('\n').filter(l=>l.trim());
+ const cells=l=>l.split(/[;\t,](?=(?:[^"]*"[^"]*")*[^"]*$)/).map(c=>c.trim().replace(/^"|"$/g,'').replace(/""/g,'"'));
+ if(lines.length>1&&/(passo|step|fase|attivit|descrizione|nome)/i.test(lines[0]))lines.shift();
+ return{rows:lines.map(l=>({level:0,text:(cells(l).find(c=>c.length>1)||'').trim()})).filter(r=>r.text),marks:true};
+}
+function flowText(rows){ // dai livelli del documento alla sintassi del flusso: solo le scelte hanno rami rientrati
+ const out=[];let q=null;
+ rows.forEach(r=>{
+  let text=r.text,lv=0;
+  const lab=/^(?:se\s+)?(s[iì]|no)\s*[:,\-–—]\s*(.+)$/i.exec(text);
+  if(q&&r.level>q.lv)lv=r.level-q.lv;
+  else if(q&&r.level===q.lv&&lab)lv=1;
+  else q=null;
+  if(lab&&lv>0)text=(/^s/i.test(lab[1])?'Sì':'No')+': '+lab[2].trim();
+  if(lv===0&&/\?$/.test(text))q={lv:r.level};
+  out.push({lv,text});
+ });
+ return out;
+}
+function importDoc(rows,marks,name){
+ const MAXR=200;let warn='',prose=false;
+ rows=rows.filter(r=>r.text);
+ if(!rows.length)return toast('Nel file non ho trovato testo da importare.');
+ // documento in prosa: niente elenchi né titoli → una frase per riga
+ if(!marks&&rows.some(r=>r.text.length>140)){
+  prose=true;const sp=[];
+  rows.forEach(r=>{(r.text.length>140?r.text.replace(/([.;!?])\s+(?=[A-ZÀ-Ý0-9"«])/g,'$1\u0001').split('\u0001'):[r.text]).forEach(s=>{s=s.trim();if(s.length>140)s=s.slice(0,s.lastIndexOf(' ',110)>40?s.lastIndexOf(' ',110):110)+'…';if(s)sp.push({level:0,text:s});});});
+  rows=sp;
+ }
+ if(rows.length>MAXR){rows=rows.slice(0,MAXR);warn+=' Ho tenuto le prime '+MAXR+' righe.';}
+ // niente salti di livello
+ let prev=-1;rows.forEach(r=>{r.level=Math.max(0,Math.min(r.level,prev+1,8));prev=r.level;});
+ const hasQ=rows.some(r=>/\?$/.test(r.text)),nested=rows.some(r=>r.level>0);
+ const mode=hasQ?'flow':(nested?'mind':'flow');
+ $('#gmode').value=mode;$('#gdir').disabled=mode!=='flow';
+ const lines=mode==='flow'?flowText(rows).map(r=>'  '.repeat(r.lv)+r.text):rows.map(r=>'  '.repeat(r.level)+r.text);
+ $('#gtxt').value=lines.join('\n');
+ if(prose)warn+=' Il documento è scritto in prosa: ho diviso le frasi, controlla il risultato (per testi discorsivi usa «Copia il prompt»).';
+ $('#gmsg').textContent='Importate '+lines.length+' righe da «'+name+'» come '+(mode==='mind'?'mappa mentale':'flusso')+'.'+warn+' Controlla il testo e premi Genera.';
+}
+$('#gImp').addEventListener('click',()=>$('#gfile').click());
+$('#gfile').addEventListener('change',async e=>{
+ const f=e.target.files[0];e.target.value='';if(!f)return;
+ try{
+  if(f.size>5*1024*1024)throw new Error('il file è troppo grande (massimo 5 MB)');
+  const ext=(f.name.split('.').pop()||'').toLowerCase();
+  if(ext==='pdf')throw new Error('i PDF non si leggono qui: copia il testo e incollalo nel riquadro, oppure usa «Copia il prompt»');
+  let r;
+  if(ext==='docx')r=await docxRows(f);
+  else if(ext==='csv')r=csvRows(await f.text());
+  else r=docRows(await f.text());
+  importDoc(r.rows,r.marks,f.name);
+ }catch(err){toast('Importazione non riuscita: '+((err&&err.message)||err));}
+});
+function buildPrompt(mode){
+ const nm={flow:'diagramma di flusso',mind:'mappa mentale',org:'organigramma'}[mode],ex={flow:EXAMPLE_FLOW,mind:EXAMPLE_MIND,org:EXAMPLE_ORG}[mode];
+ const rules={
+  flow:['Una riga = un passo, con frasi brevi (al massimo 10 parole).','Comincia con «Inizio» e finisci con «Fine».','Una scelta è una riga che finisce con «?»; sotto, rientrati di 2 spazi, i rami scritti «Sì: …» e «No: …» (o altri nomi brevi di ramo).','Le righe rientrate sotto un ramo sono i passi successivi di quel ramo.','Per tornare a un passo già scritto, usa «-> testo del passo» (come nell\'esempio).'],
+  mind:['La prima riga è il tema centrale.','I rientri di 2 spazi formano l\'albero: ogni riga rientrata dipende da quella sopra.','Al massimo 3 livelli, con 3-7 voci per ramo, in frasi brevi.'],
+  org:['La prima riga è il vertice dell\'organizzazione.','I rientri di 2 spazi indicano chi dipende da chi.','Usa nomi di ruoli o funzioni, non di persone, a meno che il documento non li indichi.']
+ }[mode];
+ return `Sei un assistente che trasforma documenti in diagrammi per l'app Filo.
+Leggi il documento che ti fornisco in fondo e scrivi un ${nm}.
+Rispondi SOLO con il testo del diagramma, dentro un unico blocco di codice, senza introduzioni né spiegazioni.
+
+Regole di scrittura:
+${rules.map(r=>'- '+r).join('\n')}
+- Usa soltanto ciò che c'è nel documento: non inventare passaggi. Se qualcosa non è chiaro, scrivilo comunque e aggiungi [?] alla fine della riga.
+- Al massimo circa 40 righe: riassumi i dettagli.
+- Scrivi in italiano.
+
+Esempio del formato richiesto:
+\`\`\`
+${ex}
+\`\`\`
+
+Documento da trasformare (incolla qui il testo oppure allega il file):
+`;
+}
+async function copyText(t){
+ try{await navigator.clipboard.writeText(t);return true;}catch(e){}
+ try{const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;opacity:0';document.body.appendChild(a);a.select();const ok=document.execCommand('copy');a.remove();return ok;}catch(e){return false;}
+}
+$('#gPrompt').addEventListener('click',async()=>{
+ const ok=await copyText(buildPrompt($('#gmode').value));
+ $('#gmsg').textContent=ok?'Prompt copiato. Incollalo nella chat del tuo assistente, aggiungi il documento, poi incolla qui sopra la risposta e premi Genera.':'Non sono riuscito a copiare: riprova o seleziona il testo a mano.';
+ toast(ok?'Prompt copiato negli appunti.':'Copia non riuscita.');
+});
 $('#gCancel').addEventListener('click',()=>{$('#modal').style.display='none';});
 $('#gGo').addEventListener('click',generate);
 $('#modal').addEventListener('pointerdown',e=>{if(e.target===$('#modal'))$('#modal').style.display='none';});
